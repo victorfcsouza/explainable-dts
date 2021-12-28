@@ -10,11 +10,13 @@ class DecisionTreeClassifier:
         self.n_features_ = None
         self.tree_ = None
 
-    def fit(self, X, y):
+    def fit(self, X, y, modified_factor=1):
         """Build decision tree classifier."""
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
         self.n_features_ = X.shape[1]
-        self.tree_ = self._grow_tree(X, y)
+        feature_index_occurrences = [0] * self.n_features_
+        self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
+                                     modified_factor=modified_factor)
 
     def predict(self, X):
         """Predict class for X."""
@@ -41,7 +43,7 @@ class DecisionTreeClassifier:
         m = y.size
         return 1.0 - sum((np.sum(y == c) / m) ** 2 for c in range(self.n_classes_))
 
-    def _best_split(self, X, y):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
         """Find the best split for a node.
 
         "Best" means that the average impurity of the two children, weighted by their
@@ -67,6 +69,7 @@ class DecisionTreeClassifier:
 
         # Gini of current node.
         best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent)
+
         best_idx, best_thr = None, None
 
         # Loop through all features.
@@ -94,6 +97,7 @@ class DecisionTreeClassifier:
                 # The Gini impurity of a split is the weighted average of the Gini
                 # impurity of the children.
                 gini = (i * gini_left + (m - i) * gini_right) / m
+                modified_gini = gini * modified_factor if feature_index_occurrences[idx] else gini
 
                 # The following condition is to make sure we don't try to split two
                 # points with identical values for that feature, as it is impossible
@@ -101,14 +105,14 @@ class DecisionTreeClassifier:
                 if thresholds[i] == thresholds[i - 1]:
                     continue
 
-                if gini < best_gini:
-                    best_gini = gini
+                if modified_gini < best_gini:
+                    best_gini = modified_gini
                     best_idx = idx
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2  # midpoint
 
         return best_idx, best_thr
 
-    def _grow_tree(self, X, y, depth=0):
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1):
         """Build a decision tree by recursively finding the best split."""
         # Population for each class in current node. The predicted class is the one with
         # largest population.
@@ -119,19 +123,26 @@ class DecisionTreeClassifier:
             num_samples=y.size,
             num_samples_per_class=num_samples_per_class,
             predicted_class=predicted_class,
+            feature_index_occurrences=feature_index_occurrences.copy()
         )
 
         # Split recursively until maximum depth is reached.
         if depth < self.max_depth:
-            idx, thr = self._best_split(X, y)
+            idx, thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
+                                        modified_factor=modified_factor)
             if idx is not None:
                 indices_left = X[:, idx] < thr
                 X_left, y_left = X[indices_left], y[indices_left]
                 X_right, y_right = X[~indices_left], y[~indices_left]
                 node.feature_index = idx
                 node.threshold = thr
-                node.left = self._grow_tree(X_left, y_left, depth + 1)
-                node.right = self._grow_tree(X_right, y_right, depth + 1)
+                node.feature_index_occurrences[idx] += 1
+                node.left = self._grow_tree(X_left, y_left, depth + 1,
+                                            feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor)
+                node.right = self._grow_tree(X_right, y_right, depth + 1,
+                                             feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                             modified_factor=modified_factor)
         return node
 
     def _predict(self, inputs):

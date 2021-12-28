@@ -4,12 +4,13 @@
 class Node:
     """A decision tree node."""
 
-    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class):
+    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences):
         self.gini = gini
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
         self.predicted_class = predicted_class
         self.feature_index = 0
+        self.feature_index_occurrences = feature_index_occurrences
         self.threshold = 0
         self.left = None
         self.right = None
@@ -33,6 +34,7 @@ class Node:
             ]
         if show_details:
             lines += [
+                "feature_occurrences = {}".format(self.feature_index_occurrences),
                 "gini = {:.2f}".format(self.gini),
                 "samples = {}".format(self.num_samples),
                 str(self.num_samples_per_class),
