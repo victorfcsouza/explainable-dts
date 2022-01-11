@@ -4,16 +4,54 @@
 class Node:
     """A decision tree node."""
 
-    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences):
+    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences=None,
+                 feature_index_occurrences_redundant=None):
         self.gini = gini
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
         self.predicted_class = predicted_class
         self.feature_index = 0
-        self.feature_index_occurrences = feature_index_occurrences
+        self.feature_index_occurrences = feature_index_occurrences  # number of occurrences for each feature
+
+        # for each feature, +1 if feature x_i appears in x_i > j,
+        # -1 if x_i appears in x_i <= j, and
+        # 2 if x_if appears in both <= j and > j,
+        # 0 otherwise
+        self.feature_index_occurrences_redundant = feature_index_occurrences_redundant
+
         self.threshold = 0
         self.left = None
         self.right = None
+
+    def get_node_explainability(self):
+        return sum(abs(x) for x in self.feature_index_occurrences_redundant)
+
+    def get_next_feature_occurrences_redundant(self, idx, direction):
+        if direction != 'right' and direction != 'left':
+            raise ValueError("Value of direction not permitted: ", direction)
+
+        new_feature_list = self.feature_index_occurrences_redundant.copy()
+        if self.feature_index_occurrences_redundant[idx] == 0:
+            if direction == 'right':
+                new_feature_list[idx] = 1
+            else:
+                new_feature_list[idx] = -1
+        elif self.feature_index_occurrences_redundant[idx] == 1:
+            if direction == 'right':
+                new_feature_list[idx] = 1
+            else:
+                new_feature_list[idx] = 2
+        elif self.feature_index_occurrences_redundant[idx] == -1:
+            if direction == 'right':
+                new_feature_list[idx] = 2
+            else:
+                new_feature_list[idx] = -1
+        elif self.feature_index_occurrences_redundant[idx] == 2:
+            # Do nothing +2 is the maximum
+            pass
+        else:
+            raise ValueError("Some value not permitted on feature index redundant")
+        return new_feature_list
 
     def debug(self, feature_names, class_names, show_details):
         """Print an ASCII visualization of the tree."""
@@ -35,6 +73,7 @@ class Node:
         if show_details:
             lines += [
                 "feature_occurrences = {}".format(self.feature_index_occurrences),
+                "feat_redund_occurr = {}".format(self.feature_index_occurrences_redundant),
                 "gini = {:.2f}".format(self.gini),
                 "samples = {}".format(self.num_samples),
                 str(self.num_samples_per_class),

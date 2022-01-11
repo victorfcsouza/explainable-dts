@@ -1,6 +1,6 @@
 """Implementation of the CART algorithm to train decision tree classifiers."""
 import numpy as np
-import tree
+import tree.tree as tree
 
 
 class DecisionTreeClassifier:
@@ -15,7 +15,9 @@ class DecisionTreeClassifier:
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
         self.n_features_ = X.shape[1]
         feature_index_occurrences = [0] * self.n_features_
+        feature_index_occurrences_redundant = [0] * self.n_features_
         self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
+                                     feature_index_occurrences_redundant=feature_index_occurrences_redundant,
                                      modified_factor=modified_factor)
 
     def predict(self, X):
@@ -112,7 +114,8 @@ class DecisionTreeClassifier:
 
         return best_idx, best_thr
 
-    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1):
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, feature_index_occurrences_redundant=None,
+                   modified_factor=1, leaf_count=0):
         """Build a decision tree by recursively finding the best split."""
         # Population for each class in current node. The predicted class is the one with
         # largest population.
@@ -123,7 +126,8 @@ class DecisionTreeClassifier:
             num_samples=y.size,
             num_samples_per_class=num_samples_per_class,
             predicted_class=predicted_class,
-            feature_index_occurrences=feature_index_occurrences.copy()
+            feature_index_occurrences=feature_index_occurrences.copy(),
+            feature_index_occurrences_redundant=feature_index_occurrences_redundant.copy()
         )
 
         # Split recursively until maximum depth is reached.
@@ -137,11 +141,15 @@ class DecisionTreeClassifier:
                 node.feature_index = idx
                 node.threshold = thr
                 node.feature_index_occurrences[idx] += 1
-                node.left = self._grow_tree(X_left, y_left, depth + 1,
+                left_feature_occurrences_redundant = node.get_next_feature_occurrences_redundant(idx, 'left')
+                right_feature_occurrences_redundant = node.get_next_feature_occurrences_redundant(idx, 'right')
+                node.left = self._grow_tree(X_left, y_left, depth + 1, leaf_count=leaf_count,
                                             feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                            feature_index_occurrences_redundant=left_feature_occurrences_redundant,
                                             modified_factor=modified_factor)
-                node.right = self._grow_tree(X_right, y_right, depth + 1,
+                node.right = self._grow_tree(X_right, y_right, depth + 1, leaf_count=leaf_count,
                                              feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                             feature_index_occurrences_redundant=right_feature_occurrences_redundant,
                                              modified_factor=modified_factor)
         return node
 
@@ -154,3 +162,15 @@ class DecisionTreeClassifier:
             else:
                 node = node.right
         return node.predicted_class
+
+    @staticmethod
+    def get_score(X_train, y_train, X_test, y_test, modified_factor=1, max_depth=5, debug=False):
+        clf = DecisionTreeClassifier(max_depth=max_depth)
+        clf.fit(X_train, y_train, modified_factor=modified_factor)
+        if debug:
+            clf.debug(
+                feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
+                class_names=["Class {}".format(i) for i in range(len(y_train))],
+                show_details=True
+            )
+        return round(clf.score(X_train, y_train), 3), round(clf.score(X_test, y_test), 3)
