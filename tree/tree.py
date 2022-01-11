@@ -4,8 +4,7 @@
 class Node:
     """A decision tree node."""
 
-    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences=None,
-                 feature_index_occurrences_redundant=None):
+    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences=None):
         self.gini = gini
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
@@ -17,14 +16,20 @@ class Node:
         # -1 if x_i appears in x_i <= j, and
         # 2 if x_if appears in both <= j and > j,
         # 0 otherwise
-        self.feature_index_occurrences_redundant = feature_index_occurrences_redundant
+        self.feature_index_occurrences_redundant = None
 
         self.threshold = 0
         self.left = None
         self.right = None
 
+    def get_node_depth(self):
+        # Assert that get_explainability_metrics was previously run
+        return 1 + sum(x for x in self.feature_index_occurrences)
+
     def get_node_explainability(self):
-        return sum(abs(x) for x in self.feature_index_occurrences_redundant)
+        # Path to node less the redundant nodes
+        # Assert that get_explainability_metrics was previously run
+        return 1 + sum(abs(x) for x in self.feature_index_occurrences_redundant)
 
     def get_next_feature_occurrences_redundant(self, idx, direction):
         if direction != 'right' and direction != 'left':
@@ -118,3 +123,60 @@ class Node:
         if not root:
             lines[0] = lines[0][:middle] + "┴" + lines[0][middle + 1:]
         return lines, n + m + width, max(p, q) + 2 + len(top_lines), middle
+
+    def get_explainability_metrics(self, num_features):
+        wapl_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)
+        wapl_redundant_by_node = []  # Same as wapl_by_node but discarding redundant features
+
+        # Recursive function
+        def visit_node(node: Node, _feature_index_occurs, _feature_index_redundant_occurs):
+
+            # Copy lists from father
+            node.feature_index_occurrences = _feature_index_occurs.copy()
+            node.feature_index_occurrences_redundant = _feature_index_redundant_occurs.copy()
+
+            # Update feature_index if it is not a leaf
+            if node.feature_index:
+                node.feature_index_occurrences[node.feature_index] += 1
+
+            left_node: Node = node.left
+            right_node: Node = node.right
+
+            if not left_node and not right_node:
+                # leaf
+                depth = node.get_node_depth()
+                redundant_depth = node.get_node_explainability()
+                num_samples = node.num_samples
+                wapl_by_node.append((depth, num_samples))
+                wapl_redundant_by_node.append((redundant_depth, num_samples))
+
+            if left_node:
+                next_index_occurs = node.get_next_feature_occurrences_redundant(node.feature_index, 'left')
+                left_node.feature_index_occurrences_redundant = next_index_occurs
+                visit_node(left_node, node.feature_index_occurrences.copy(), next_index_occurs.copy())
+            if right_node:
+                next_index_occurs = node.get_next_feature_occurrences_redundant(node.feature_index, 'right')
+                right_node.feature_index_occurrences_redundant = next_index_occurs
+                visit_node(right_node, node.feature_index_occurrences.copy(), next_index_occurs.copy())
+
+        # Call recursive function
+        self.feature_index_occurrences = [0] * num_features
+        self.feature_index_occurrences_redundant = [0] * num_features
+        visit_node(self, self.feature_index_occurrences.copy(), self.feature_index_occurrences_redundant.copy())
+
+        # Calculate metrics
+        max_depth = max(x[0] for x in wapl_by_node)
+        max_redundant_depth = max(x[0] for x in wapl_redundant_by_node)
+
+        total_samples = sum(x[1] for x in wapl_by_node)
+        wapl_sum = 0
+        for p in wapl_by_node:
+            wapl_sum += p[0] * p[1]
+        wapl = wapl_sum / total_samples
+
+        wapl_redundant_sum = 0
+        for p in wapl_redundant_by_node:
+            wapl_redundant_sum += p[0] * p[1]
+        wapl_redundant = wapl_redundant_sum / total_samples
+
+        return max_depth, max_redundant_depth, wapl, wapl_redundant

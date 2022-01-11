@@ -30,6 +30,9 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, train_size=0.7)
 
     for factor in np.linspace(0.2, 1.0, num=5):
-        score_train, score_test = DecisionTreeClassifier.get_score(X_train, y_train, X_test, y_test,
-                                                                   modified_factor=factor, max_depth=5, debug=False)
+        dt = DecisionTreeClassifier(max_depth=8)
+        score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor, debug=False)
         print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
+        max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
+        print(f"max_depth:  {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl},"
+              f" wapl_redundant: {wapl_redundant}")
