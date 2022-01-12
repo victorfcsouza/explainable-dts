@@ -16,10 +16,10 @@ def print_score_sklearn(X_train, y_train, X_test, y_test):
 
 
 def plot_graphic(factors, train_accuracy_list, test_accuracy_list, max_depth_list, max_depth_redundant_list, wapl_list,
-                 wapl_redundant_list, filename='test.png'):
+                 wapl_redundant_list, dataset_name, filename='test.png'):
     figure(figsize=(12, 10), dpi=300)
     plt.subplot(2, 1, 1)
-    plt.title('Accuracy versus redundancy metrics', fontsize=16)
+    plt.title(dataset_name, fontsize=16)
     plt.plot(factors, train_accuracy_list, label="Train Accuracy", color='red', marker='o')
     plt.plot(factors, test_accuracy_list, label="Test Accuracy", color='darkred', marker='o')
     plt.ylabel("Accuracy", fontsize=16)
@@ -91,18 +91,26 @@ def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=No
                  [x['max_depth_redundant'] for x in results],
                  [x['wapl'] for x in results],
                  [x['wapl_redundant'] for x in results],
+                 dataset_name=dataset_name,
                  filename=f'results/{dataset_name}.png')
     store_results({'tree_max_depth': max_depth_tree, "results": results},
                   filename=f"results/{dataset_name}.txt")
 
 
 if __name__ == "__main__":
-    # test_dataset("dry_bean", "../data/dry_bean/Dry_Bean_Dataset.csv", "Class", max_depth_tree=8)
-    # test_dataset("avila", "../data/avila/avila-tr.csv", "Class", max_depth_tree=10)
-    # test_dataset("obs_network", "../data/obs_network/obs_network_dataset.csv", "Class",
-    #              columns_to_delete=['NodeStatus'], max_depth_tree=10)
-    # test_dataset("cardiotocography", "../data/cardiotocography/CTG.csv", "CLASS",
-    #              columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
-    #              max_depth_tree=5)
+    test_dataset("dry_bean", "../data/dry_bean/Dry_Bean_Dataset.csv", "Class", max_depth_tree=8)
+    test_dataset("avila", "../data/avila/avila-tr.csv", "Class", max_depth_tree=10)
+    test_dataset("obs_network", "../data/obs_network/obs_network_dataset.csv", "Class",
+                 columns_to_delete=['NodeStatus'], max_depth_tree=10)
+    test_dataset("cardiotocography", "../data/cardiotocography/CTG.csv", "CLASS",
+                 columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
+                 max_depth_tree=5)
     test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
-                 "default payment next month", columns_to_delete=['ID'], max_depth_tree=5)
+                 "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
+    test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
+    test_dataset("letter_recognition", "../data/letter-recognition.csv", "lettr", max_depth_tree=13)
+    test_dataset("online_shopers_intention", "../data/online_shoppers_intention.csv", "Revenue",
+                 columns_to_delete=['Month'], max_depth_tree=9)
+    test_dataset("pen_based_digit_recognition", "../data/pendigits.csv", "digit", max_depth_tree=10)
+    test_dataset("room_occupation", "../data/Occupancy_Estimation.csv", "Room_Occupancy_Count",
+                 columns_to_delete=['Date', 'Time'], max_depth_tree=10)
