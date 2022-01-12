@@ -42,6 +42,8 @@ def store_results(result_json, filename):
 
 
 def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=None, max_depth_tree=5):
+    print("############################")
+    print("Running tests for ", dataset_name)
     # Read CSV
     np.set_printoptions(suppress=True)
     data = pd.read_csv(csv_file)
@@ -95,6 +97,8 @@ def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=No
                  filename=f'results/{dataset_name}.png')
     store_results({'tree_max_depth': max_depth_tree, "results": results},
                   filename=f"results/{dataset_name}.txt")
+    print("Ended testes for ", dataset_name)
+    print("############################")
 
 
 if __name__ == "__main__":
