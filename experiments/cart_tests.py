@@ -1,11 +1,16 @@
-import pandas as pd
-import numpy as np
-import sklearn.tree as sklearn_tree
-from sklearn.model_selection import train_test_split
-from cart.cart import DecisionTreeClassifier
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
 import json
+from matplotlib.pyplot import figure
+import matplotlib.pyplot as plt
+import numpy as np
+from os import listdir
+from os.path import isfile, join
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import sklearn.tree as sklearn_tree
+
+from cart.cart import DecisionTreeClassifier
+
+RESULTS_FOLDER = "results"
 
 
 def print_score_sklearn(X_train, y_train, X_test, y_test):
@@ -41,9 +46,72 @@ def store_results(result_json, filename):
         json.dump(result_json, f)
 
 
-def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=None, max_depth_tree=5):
+def get_opt_factor(results, opt_factor=0.90):
+    # Assume that results are ordered by increasing factors
+    reversed_results = sorted(results, key=lambda x: x['factor'], reverse=True)
+    max_test_accuracy = reversed_results[0]['test_accuracy']
+
+    max_metrics = reversed_results[0]
+
+    opt_index = -1
+    for i in range(1, len(reversed_results)):
+        if reversed_results[i]['test_accuracy'] <= opt_factor * max_test_accuracy:
+            opt_index = i - 1
+            break
+    opt_metrics = reversed_results[opt_index]
+
+    diff_results = dict()
+    for key in max_metrics:
+        if key == "factor":
+            diff_results[key] = opt_metrics[key]
+        else:
+            diff_results[key] = round((opt_metrics[key] - max_metrics[key]) / max_metrics[key], 2)
+
+    return diff_results
+
+
+def plot_opt_table(bins=False):
+    """
+    Compares metrics between datasets
+    """
+    files = [f for f in listdir(RESULTS_FOLDER) if isfile(join(RESULTS_FOLDER, f))]
+    json_files = [f for f in files if 'json' in f]
+
+    diff_data = []
+    cols = ['factor', 'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl', 'wapl_redundant']
+    rows = []
+    for file in json_files:
+        with open(f"{RESULTS_FOLDER}/{file}") as json_file:
+            file_data = json.load(json_file)
+            results_list = file_data['results']
+            metric_list = [result['metrics'] for result in results_list if result['bins'] == bins][0]
+            opt_dict = get_opt_factor(metric_list)
+            rows.append(file_data['dataset'])
+            diff_data.append([opt_dict[col] for col in cols])
+
+    # Plot Table
+    plt.rcParams["figure.figsize"] = [14, 12]
+    plt.rcParams["figure.autolayout"] = True
+    fig, ax = plt.subplots()
+    ax.axis('tight')
+    ax.axis('off')
+    table = ax.table(
+        cellText=diff_data,
+        rowLabels=rows,
+        colLabels=cols,
+        rowColours=["palegreen"] * 10,
+        colColours=["palegreen"] * 10,
+        cellLoc='center',
+        loc='upper left')
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    ax.set_title(f'Metric diffs with bins = {bins}', fontsize=14)
+    plt.savefig(f"{RESULTS_FOLDER}/metric_diffs_bins_{bins}.png", dpi=300)
+
+
+def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=None, max_depth_tree=5, bins=False):
     print("############################")
-    print("Running tests for ", dataset_name)
+    print("Running tests for", dataset_name)
     # Read CSV
     np.set_printoptions(suppress=True)
     data = pd.read_csv(csv_file)
@@ -95,26 +163,29 @@ def test_dataset(dataset_name, csv_file, column_class_name, columns_to_delete=No
                  [x['wapl_redundant'] for x in results],
                  dataset_name=dataset_name,
                  filename=f'results/{dataset_name}.png')
-    store_results({'tree_max_depth': max_depth_tree, "results": results},
-                  filename=f"results/{dataset_name}.txt")
-    print("Ended testes for ", dataset_name)
+    store_results({
+        'dataset': dataset_name,
+        'results': [{'tree_max_depth': max_depth_tree, "bins": bins, 'metrics': results}]},
+        filename=f"{RESULTS_FOLDER}/{dataset_name}.json")
+    print("Ended testes for", dataset_name)
     print("############################")
 
 
 if __name__ == "__main__":
-    test_dataset("dry_bean", "../data/dry_bean/Dry_Bean_Dataset.csv", "Class", max_depth_tree=8)
-    test_dataset("avila", "../data/avila/avila-tr.csv", "Class", max_depth_tree=10)
-    test_dataset("obs_network", "../data/obs_network/obs_network_dataset.csv", "Class",
-                 columns_to_delete=['NodeStatus'], max_depth_tree=10)
-    test_dataset("cardiotocography", "../data/cardiotocography/CTG.csv", "CLASS",
-                 columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
-                 max_depth_tree=5)
-    test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
-                 "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
-    test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
-    test_dataset("letter_recognition", "../data/letter-recognition.csv", "lettr", max_depth_tree=13)
-    test_dataset("online_shopers_intention", "../data/online_shoppers_intention.csv", "Revenue",
-                 columns_to_delete=['Month'], max_depth_tree=9)
-    test_dataset("pen_based_digit_recognition", "../data/pendigits.csv", "digit", max_depth_tree=10)
-    test_dataset("room_occupation", "../data/Occupancy_Estimation.csv", "Room_Occupancy_Count",
-                 columns_to_delete=['Date', 'Time'], max_depth_tree=10)
+    # test_dataset("dry_bean", "../data/dry_bean/Dry_Bean_Dataset.csv", "Class", max_depth_tree=8)
+    # test_dataset("avila", "../data/avila/avila-tr.csv", "Class", max_depth_tree=10)
+    # test_dataset("obs_network", "../data/obs_network/obs_network_dataset.csv", "Class",
+    #              columns_to_delete=['NodeStatus'], max_depth_tree=10)
+    # test_dataset("cardiotocography", "../data/cardiotocography/CTG.csv", "CLASS",
+    #              columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
+    #              max_depth_tree=5)
+    # test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
+    #              "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
+    # test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
+    # test_dataset("letter_recognition", "../data/letter-recognition.csv", "lettr", max_depth_tree=13)
+    # test_dataset("online_shopers_intention", "../data/online_shoppers_intention.csv", "Revenue",
+    #              columns_to_delete=['Month'], max_depth_tree=9)
+    # test_dataset("pen_based_digit_recognition", "../data/pendigits.csv", "digit", max_depth_tree=10)
+    # test_dataset("room_occupation", "../data/Occupancy_Estimation.csv", "Room_Occupancy_Count",
+    #              columns_to_delete=['Date', 'Time'], max_depth_tree=10)
+    plot_opt_table()
