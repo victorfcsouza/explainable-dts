@@ -89,6 +89,9 @@ def plot_opt_table(bins=False):
             rows.append(file_data['dataset'])
             diff_data.append([opt_dict[col] for col in cols])
 
+    # Sort by wapl_redundant
+    rows, diff_data = zip(*sorted(zip(rows, diff_data), key=lambda x: x[1][-1]))
+
     # Plot Table
     plt.rcParams["figure.figsize"] = [14, 12]
     plt.rcParams["figure.autolayout"] = True
