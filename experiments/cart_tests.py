@@ -89,10 +89,13 @@ def plot_opt_table(bins=False):
         with open(f"{RESULTS_FOLDER}/{file}") as json_file:
             file_data = json.load(json_file)
             results_list = file_data['results']
-            metric_list = [result['metrics'] for result in results_list if result['bins'] == bins][0]
+            metric_list = [result['metrics'] for result in results_list if result['bins'] == bins]
             if not metric_list:
                 # Wrong file regarding bins
-                return
+                continue
+            else:
+                # Get the only result
+                metric_list = metric_list[0]
             opt_dict = get_opt_factor(metric_list)
             rows.append(file_data['dataset'])
             diff_data.append([opt_dict[col] for col in cols])
@@ -221,34 +224,34 @@ if __name__ == "__main__":
     #              columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
     #              max_depth_tree=5, bins=True)
 
-    test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
-                 "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
-    test_dataset("default_credit_card_bins", "../data/default_credit_card/defaults_credit_card_bins.csv",
-                 "default payment next month", columns_to_delete=['ID'], max_depth_tree=10, bins=True)
+    # test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
+    #              "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
+    # test_dataset("default_credit_card_bins", "../data/default_credit_card/defaults_credit_card_bins.csv",
+    #              "default payment next month", columns_to_delete=['ID'], max_depth_tree=10, bins=True)
+    #
+    # test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
+    # test_dataset("eeg_eye_state_bins", "../data/eeg_eye_state/eeg_eye_state_bins.csv", "eyeDetection",
+    #              max_depth_tree=10, bins=True)
+    #
+    # test_dataset("letter_recognition", "../data/letter_recognition/letter-recognition.csv", "lettr", max_depth_tree=13)
+    # test_dataset("letter_recognition_bins", "../data/letter_recognition/letter-recognition_bins.csv", "lettr",
+    #              max_depth_tree=13, bins=True)
 
-    test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
-    test_dataset("eeg_eye_state_bins", "../data/eeg_eye_state/eeg_eye_state_bins.csv", "eyeDetection",
-                 max_depth_tree=10, bins=True)
-
-    test_dataset("letter_recognition", "../data/letter_recognition/letter-recognition.csv", "lettr", max_depth_tree=13)
-    test_dataset("letter_recognition_bins", "../data/letter_recognition/letter-recognition_bins.csv", "lettr",
-                 max_depth_tree=13, bins=True)
-
-    test_dataset("online_shopers_intention", "../data/online_shoppers_intention/online_shoppers_intention.csv",
-                 "Revenue",
-                 columns_to_delete=['Month'], max_depth_tree=9)
-    test_dataset("online_shopers_intention_bins",
-                 "../data/online_shoppers_intention/online_shoppers_intention_bins.csv", "Revenue",
-                 columns_to_delete=['Month'], max_depth_tree=9, bins=True)
-
-    test_dataset("pen_based_digit_recognition", "../data/pen_digits/pendigits.csv", "digit", max_depth_tree=10)
-    test_dataset("pen_based_digit_recognition_bins", "../data/pen_digits/pendigits_bins.csv", "digit",
-                 max_depth_tree=10, bins=True)
-
-    test_dataset("room_occupation", "../data/occupancy_room/Occupancy_Estimation.csv", "Room_Occupancy_Count",
-                 columns_to_delete=['Date', 'Time'], max_depth_tree=10)
-    test_dataset("room_occupation_bins", "../data/occupancy_room/Occupancy_Estimation_bins.csv", "Room_Occupancy_Count",
-                 columns_to_delete=['Date', 'Time'], max_depth_tree=10, bins=True)
+    # test_dataset("online_shopers_intention", "../data/online_shoppers_intention/online_shoppers_intention.csv",
+    #              "Revenue",
+    #              columns_to_delete=['Month'], max_depth_tree=9)
+    # test_dataset("online_shopers_intention_bins",
+    #              "../data/online_shoppers_intention/online_shoppers_intention_bins.csv", "Revenue",
+    #              columns_to_delete=['Month'], max_depth_tree=9, bins=True)
+    #
+    # test_dataset("pen_based_digit_recognition", "../data/pen_digits/pendigits.csv", "digit", max_depth_tree=10)
+    # test_dataset("pen_based_digit_recognition_bins", "../data/pen_digits/pendigits_bins.csv", "digit",
+    #              max_depth_tree=10, bins=True)
+    #
+    # test_dataset("room_occupation", "../data/occupancy_room/Occupancy_Estimation.csv", "Room_Occupancy_Count",
+    #              columns_to_delete=['Date', 'Time'], max_depth_tree=10)
+    # test_dataset("room_occupation_bins", "../data/occupancy_room/Occupancy_Estimation_bins.csv", "Room_Occupancy_Count",
+    #              columns_to_delete=['Date', 'Time'], max_depth_tree=10, bins=True)
 
     plot_opt_table(bins=False)
     plot_opt_table(bins=True)
