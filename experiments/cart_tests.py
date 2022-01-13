@@ -47,6 +47,10 @@ def store_results(result_json, filename):
 
 
 def get_opt_factor(results, opt_factor=0.90):
+    """
+    Get the lower factor that allow a decreasing in test_accuracy not lower than opt_factor.
+    Also, get the diff compared to original values (factor=1) in percentage
+    """
     # Assume that results are ordered by increasing factors
     reversed_results = sorted(results, key=lambda x: x['factor'], reverse=True)
     max_test_accuracy = reversed_results[0]['test_accuracy']
@@ -65,7 +69,8 @@ def get_opt_factor(results, opt_factor=0.90):
         if key == "factor":
             diff_results[key] = opt_metrics[key]
         else:
-            diff_results[key] = round((opt_metrics[key] - max_metrics[key]) / max_metrics[key], 2)
+            diff_metric = round(100 * (opt_metrics[key] - max_metrics[key]) / max_metrics[key])
+            diff_results[key] = str(diff_metric) + "%"
 
     return diff_results
 
@@ -90,7 +95,8 @@ def plot_opt_table(bins=False):
             diff_data.append([opt_dict[col] for col in cols])
 
     # Sort by wapl_redundant
-    rows, diff_data = zip(*sorted(zip(rows, diff_data), key=lambda x: x[1][-1]))
+    # int(x[1][-1][:-2]) converts wapl_redundant to int without the % symbol
+    rows, diff_data = zip(*sorted(zip(rows, diff_data), key=lambda x: int(x[1][-1][:-1])))
 
     # Plot Table
     plt.rcParams["figure.figsize"] = [14, 12]
