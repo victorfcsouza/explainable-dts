@@ -156,6 +156,10 @@ class Test:
         X = data.drop(labels=self.col_class_name, axis=1).to_numpy()
         y = data[self.col_class_name].astype('int').to_numpy() - 1
 
+        # Populate dataset metrics
+        self.n_samples, self.n_features = X.shape
+        self.n_classes = len(set(y))
+
         unique, counts = np.unique(y, return_counts=True)
         dict(zip(unique, counts))
 
@@ -167,10 +171,7 @@ class Test:
             dt = DecisionTreeClassifier(max_depth=self.max_depth_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor,
                                                    debug=False)
-            # Populate dataset metrics
-            self.n_samples = dt.n_samples
-            self.n_features = dt.n_features_
-            self.n_classes = dt.n_classes_
+
 
             print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
             max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
