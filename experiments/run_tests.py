@@ -1,3 +1,4 @@
+import csv
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,55 +85,32 @@ def create_bins(csv_file, bins=10, cols_to_remove=None):
     data.to_csv(outfile, encoding='utf-8', index=None)
 
 
+def generate_consolidates_csv(csv_file, result_dir):
+    files = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
+    json_files = [f for f in files if 'json' in f]
+
+    header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'max_depth_stop', 'discrete', 'factor',
+              'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl', 'wapl_redundant']
+    rows = []
+    for file in json_files:
+        with open(file) as json_file:
+            file_data = json.load(json_file)
+            for result in file_data['results']:
+                row = [file_data['dataset'], file_data['n_samples'], file_data['n_features'],
+                       file_data['n_classes'], file_data['bins']]
+                for it in header:
+                    row.append(result[it])
+                rows.append(row)
+
+    with open(csv_file, 'w', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        # write the header
+        writer.writerow(header)
+        # write multiple rows
+        writer.writerows(rows)
+
+
 if __name__ == "__main__":
-    # test_dataset("dry_bean", "../data/dry_bean/Dry_Bean_Dataset.csv", "Class", max_depth_tree=8)
-    # test_dataset("dry_bean_bins", "../data/dry_bean/Dry_Bean_Dataset_bins.csv", "Class", max_depth_tree=8, bins=True)
-    #
-    # test_dataset("avila", "../data/avila/avila-tr.csv", "Class", max_depth_tree=10)
-    # test_dataset("avila_bins", "../data/avila/avila-tr_bins.csv", "Class", max_depth_tree=10, bins=True)
-    #
-    # test_dataset("obs_network", "../data/obs_network/obs_network_dataset.csv", "Class",
-    #              columns_to_delete=['NodeStatus', 'id'], max_depth_tree=10)
-    # test_dataset("obs_network_bins", "../data/obs_network/obs_network_dataset_bins.csv", "Class",
-    #              columns_to_delete=['NodeStatus', 'id'], max_depth_tree=10, bins=True)
-    #
-    # test_dataset("cardiotocography", "../data/cardiotocography/CTG.csv", "CLASS",
-    #              columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
-    #              max_depth_tree=5)
-    # test_dataset("cardiotocography_bins", "../data/cardiotocography/CTG_bins.csv", "CLASS",
-    #              columns_to_delete=['Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP'],
-    #              max_depth_tree=5, bins=True)
-
-    # test_dataset("default_credit_card", "../data/default_credit_card/defaults_credit_card.csv",
-    #              "default payment next month", columns_to_delete=['ID'], max_depth_tree=10)
-    # test_dataset("default_credit_card_bins", "../data/default_credit_card/defaults_credit_card_bins.csv",
-    #              "default payment next month", columns_to_delete=['ID'], max_depth_tree=10, bins=True)
-    #
-    # test_dataset("eeg_eye_state", "../data/eeg_eye_state/eeg_eye_state.csv", "eyeDetection", max_depth_tree=10)
-    # test_dataset("eeg_eye_state_bins", "../data/eeg_eye_state/eeg_eye_state_bins.csv", "eyeDetection",
-    #              max_depth_tree=10, bins=True)
-    #
-    # test_dataset("letter_recognition", "../data/letter_recognition/letter-recognition.csv", "lettr", max_depth_tree=13)
-    # test_dataset("letter_recognition_bins", "../data/letter_recognition/letter-recognition_bins.csv", "lettr",
-    #              max_depth_tree=13, bins=True)
-
-    # test_dataset("online_shopers_intention", "../data/online_shoppers_intention/online_shoppers_intention.csv",
-    #              "Revenue",
-    #              columns_to_delete=['Month'], max_depth_tree=9)
-    # test_dataset("online_shopers_intention_bins",
-    #              "../data/online_shoppers_intention/online_shoppers_intention_bins.csv", "Revenue",
-    #              columns_to_delete=['Month'], max_depth_tree=9, bins=True)
-    #
-    # test_dataset("pen_based_digit_recognition", "../data/pen_digits/pendigits.csv", "digit", max_depth_tree=10)
-    # test_dataset("pen_based_digit_recognition_bins", "../data/pen_digits/pendigits_bins.csv", "digit",
-    #              max_depth_tree=10, bins=True)
-    #
-    # test_dataset("room_occupation", "../data/occupancy_room/Occupancy_Estimation.csv", "Room_Occupancy_Count",
-    #              columns_to_delete=['Date', 'Time'], max_depth_tree=10)
-    # test_dataset("room_occupation_bins", "../data/occupancy_room/Occupancy_Estimation_bins.csv", "Room_Occupancy_Count",
-    #              columns_to_delete=['Date', 'Time'], max_depth_tree=10, bins=True)
-
-
     datasets = [
         # name, path, bin, col_name, cols_to_delete
         ['avila', '../data/avila/avila.csv', False, 'Class', []],
@@ -179,8 +157,9 @@ if __name__ == "__main__":
 
     for ds in all_datasets:
         for depth in depths:
-            test = Test(ds[0], ds[1], depth, ds[2],  ds[3], cols_to_delete=ds[4])
+            test = Test(ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4])
             test.run()
 
+    generate_consolidates_csv("results/cart_experiments.csv", "results")
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
