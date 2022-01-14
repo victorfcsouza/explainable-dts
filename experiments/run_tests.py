@@ -93,15 +93,16 @@ def generate_consolidates_csv(csv_file, result_dir):
               'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl', 'wapl_redundant']
     rows = []
     for file in json_files:
-        with open(file) as json_file:
+        with open(result_dir + "/" + file) as json_file:
             file_data = json.load(json_file)
             for result in file_data['results']:
                 row = [file_data['dataset'], file_data['n_samples'], file_data['n_features'],
-                       file_data['n_classes'], file_data['bins']]
-                for it in header:
+                       file_data['n_classes'], file_data['max_depth_stop'], file_data['bins']]
+                for it in header[6:]:
                     row.append(result[it])
                 rows.append(row)
 
+    rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6]))
     with open(csv_file, 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         # write the header
@@ -155,10 +156,10 @@ if __name__ == "__main__":
 
     depths = [6, 7, 8]
 
-    for ds in all_datasets:
-        for depth in depths:
-            test = Test(ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4])
-            test.run()
+    # for ds in all_datasets:
+    #     for depth in depths:
+    #         test = Test(ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4])
+    #         test.run()
 
     generate_consolidates_csv("results/cart_experiments.csv", "results")
     # plot_opt_table(bins=False)
