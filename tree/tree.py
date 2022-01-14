@@ -24,12 +24,12 @@ class Node:
 
     def get_node_depth(self):
         # Assert that get_explainability_metrics was previously run
-        return 1 + sum(x for x in self.feature_index_occurrences)
+        return sum(x for x in self.feature_index_occurrences)
 
     def get_node_explainability(self):
         # Path to node less the redundant nodes
         # Assert that get_explainability_metrics was previously run
-        return 1 + sum(abs(x) for x in self.feature_index_occurrences_redundant)
+        return sum(abs(x) for x in self.feature_index_occurrences_redundant)
 
     def get_next_feature_occurrences_redundant(self, idx, direction):
         if direction != 'right' and direction != 'left':
