@@ -7,12 +7,14 @@ class DecisionTreeClassifier:
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
         self.n_classes_ = None
+        self.n_samples = None
         self.n_features_ = None
         self.tree_: tree = None
 
     def fit(self, X, y, modified_factor=1):
         """Build decision tree classifier."""
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
+        self.n_samples = len(y)
         self.n_features_ = X.shape[1]
         feature_index_occurrences = [0] * self.n_features_
         self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
