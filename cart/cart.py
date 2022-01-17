@@ -4,8 +4,9 @@ import tree.tree as tree
 
 
 class DecisionTreeClassifier:
-    def __init__(self, max_depth=None):
+    def __init__(self, max_depth=None, min_samples_stop=0):
         self.max_depth = max_depth
+        self.min_samples_stop = min_samples_stop
         self.n_classes_ = None
         self.n_samples = None
         self.n_features_ = None
@@ -130,7 +131,7 @@ class DecisionTreeClassifier:
         )
 
         # Split recursively until maximum depth is reached.
-        if depth < self.max_depth:
+        if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
             idx, thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
                                         modified_factor=modified_factor)
             if idx is not None:

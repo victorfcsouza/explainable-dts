@@ -43,21 +43,26 @@ class Metrics:
 
 class Test:
     def __init__(self, dataset_name: str, csv_file: str, max_depth_stop: int, bins: bool, col_class_name: str,
-                 cols_to_delete: list = None, results_folder="results"):
+                 cols_to_delete: list = None, min_samples_stop: int = 0,
+                 factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
+                          0.97, 0.98, 0.99, 1), results_folder="results"):
         self.dataset_name = dataset_name
         self.csv_file = csv_file
         self.col_class_name = col_class_name
         self.cols_to_delete = cols_to_delete
         self.max_depth_stop = max_depth_stop
+        self.min_samples_stop = min_samples_stop
         self.bins = bins
         self.results_folder = results_folder
+        self.factors = factors
         self.n_classes = None
         self.n_samples = None
         self.n_features = None
         self.results = None  # Need to update via test_dataset
 
     def _get_filename(self, extension: str) -> str:
-        filename = f"{self.results_folder}/{self.dataset_name}_depth_{self.max_depth_stop}_bins_{self.bins}." + \
+        filename = f"{self.results_folder}/{self.dataset_name}_depth_{self.max_depth_stop}" \
+                   f"_samples_{self.min_samples_stop}_bins_{self.bins}." + \
                    extension
         return filename
 
@@ -99,12 +104,13 @@ class Test:
             'n_classes': self.n_classes,
             'bins': self.bins,
             'max_depth_stop': self.max_depth_stop,
+            'min_samples_stop': self.min_samples_stop,
             'opt_factor': self._get_opt_factor(),
             'results': [{key.value: metric[key] for key in metric} for metric in self.results]  # Convert to string keys
         }
 
         with open(filename, 'w') as f:
-            json.dump(result_json, f)
+            json.dump(result_json, f, indent=2)
 
     def _get_opt_factor(self, opt_factor=0.90):
         """
@@ -134,7 +140,7 @@ class Test:
 
         return diff_results
 
-    def run(self, store_results=True, plot_graphic=False):
+    def run(self, store_results=True, plot_graphic=False, debug=False):
         print("############################")
         print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop} and bins = {self.bins}")
 
@@ -167,11 +173,10 @@ class Test:
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, train_size=0.7)
 
         results = []
-        for factor in np.linspace(0.1, 1.0, num=10):
+        for factor in self.factors:
             dt = DecisionTreeClassifier(max_depth=self.max_depth_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor,
-                                                   debug=False)
-
+                                                   debug=debug)
 
             print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
             max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
