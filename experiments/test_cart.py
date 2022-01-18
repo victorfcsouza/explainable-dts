@@ -142,7 +142,8 @@ class Test:
 
     def run(self, store_results=True, plot_graphic=False, debug=False):
         print("############################")
-        print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop} and bins = {self.bins}")
+        print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop},"
+              f" min_samples_stop {self.min_samples_stop} and discrete = {self.bins}")
 
         # Read CSV
         np.set_printoptions(suppress=True)
@@ -203,4 +204,5 @@ class Test:
         if store_results:
             self._store_results()
 
-        print(f"### Ended tests for {self.dataset_name} with max_depth {self.max_depth_stop} and bins = {self.bins}")
+        print(f"### Ended tests for {self.dataset_name} with max_depth {self.max_depth_stop},"
+              f"min_samples_stop {self.min_samples_stop} and discrete = {self.bins}")
