@@ -118,7 +118,7 @@ def generate_consolidates_csv(csv_file, result_dir):
                     row.append(result[it])
                 rows.append(row)
 
-    rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6]))
+    rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6], x[7]))
     with open(csv_file, 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         # write the header
