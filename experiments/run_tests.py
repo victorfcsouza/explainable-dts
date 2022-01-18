@@ -175,9 +175,9 @@ if __name__ == "__main__":
     for ds in all_datasets:
         for depth in depths:
             test = Test(ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4], min_samples_stop=30)
-            test.run()
+            # test.run()
 
-    generate_consolidates_csv("consolidated/results/cart_experiments.csv", "results")
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
