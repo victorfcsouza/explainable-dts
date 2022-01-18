@@ -140,7 +140,7 @@ class Test:
 
         return diff_results
 
-    def run(self, store_results=True, plot_graphic=False, debug=True):
+    def run(self, store_results=True, plot_graphic=False, debug=False):
         print("############################")
         print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop} and bins = {self.bins}")
 
