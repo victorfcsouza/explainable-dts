@@ -136,7 +136,7 @@ class Node:
             node.feature_index_occurrences_redundant = _feature_index_redundant_occurs.copy()
 
             # Update feature_index if it is not a leaf
-            if node.feature_index:
+            if node.feature_index is not None:
                 node.feature_index_occurrences[node.feature_index] += 1
 
             left_node: Node = node.left

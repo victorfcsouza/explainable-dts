@@ -159,14 +159,8 @@ class DecisionTreeClassifier:
                 node = node.right
         return node.predicted_class
 
-    def get_score(self, X_train, y_train, X_test, y_test, modified_factor=1, debug=False):
+    def get_score(self, X_train, y_train, X_test, y_test, modified_factor=1):
         self.fit(X_train, y_train, modified_factor=modified_factor)
-        if debug:
-            self.debug(
-                feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
-                class_names=["Class {}".format(i) for i in range(len(y_train))],
-                show_details=True
-            )
         return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
 
     def get_explainability_metrics(self):
