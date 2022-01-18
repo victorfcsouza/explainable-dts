@@ -140,7 +140,7 @@ class Test:
 
         return diff_results
 
-    def run(self, store_results=True, plot_graphic=False, debug=False):
+    def run(self, store_results=True, plot_graphic=False, debug=True):
         print("############################")
         print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop} and bins = {self.bins}")
 
@@ -175,11 +175,16 @@ class Test:
         results = []
         for factor in self.factors:
             dt = DecisionTreeClassifier(max_depth=self.max_depth_stop)
-            score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor,
-                                                   debug=debug)
+            score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
 
             print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
             max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
+            if debug:
+                dt.tree_.debug(
+                    feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
+                    class_names=["Class {}".format(i) for i in range(len(y_train))],
+                    show_details=True
+                )
             print(f"max_depth:  {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl},"
                   f" wapl_redundant: {wapl_redundant}")
             results.append({
