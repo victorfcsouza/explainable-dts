@@ -1,3 +1,7 @@
+from experiments.test import MetricType, Test
+from algorithms.cart import DecisionTreeClassifier
+from algorithms.algo import AlgoClassifier
+
 import csv
 import json
 import matplotlib.pyplot as plt
@@ -6,7 +10,6 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 import sklearn.tree as sklearn_tree
-from test_cart import MetricType, Test
 
 RESULTS_FOLDER = "results"
 
@@ -130,54 +133,58 @@ def generate_consolidates_csv(csv_file, result_dir):
 if __name__ == "__main__":
     datasets = [
         # name, path, bin, col_name, cols_to_delete
-        ['avila', '../data/avila/avila.csv', False, 'Class', []],
-
-        ['cardiotocography', '../data/cardiotocography/CTG.csv', False, 'CLASS',
-         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
-
-        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card.csv", False,
-         'default payment next month', ['ID', 'SEX', 'EDUCATION', 'MARRIAGE', 'PAY_0', 'PAY_2', 'PAY_3',
-                                        'PAY_4', 'PAY_5', 'PAY_6']],
+        # ['avila', '../data/avila/avila.csv', False, 'Class', []],
+        #
+        # ['cardiotocography', '../data/cardiotocography/CTG.csv', False, 'CLASS',
+        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
+        #
+        # ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card.csv", False,
+        #  'default payment next month', ['ID', 'SEX', 'EDUCATION', 'MARRIAGE', 'PAY_0', 'PAY_2', 'PAY_3',
+        #                                 'PAY_4', 'PAY_5', 'PAY_6']],
 
         ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset.csv", False, 'Class', []],
 
-        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state.csv', False, 'eyeDetection', []],
-
-        ['letter_recognition', '../data/letter_recognition/letter-recognition.csv', False, 'lettr', []],
-
-        ['obs_network', '../data/obs_network/obs_network_dataset.csv', False, 'Class', ['id', 'Node', 'NodeStatus']],
-
-        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation.csv', False, 'Room_Occupancy_Count',
-         ['Date', 'Time', 'S6_PIR', 'S7_PIR']],
-
-        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention.csv', False,
-         'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'TrafficType', 'VisitorType', 'Weekend']],
-
-        ['pen_digits', "../data/pen_digits/pendigits.csv", False, 'digit', []]
+        # ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state.csv', False, 'eyeDetection', []],
+        #
+        # ['letter_recognition', '../data/letter_recognition/letter-recognition.csv', False, 'lettr', []],
+        #
+        # ['obs_network', '../data/obs_network/obs_network_dataset.csv', False, 'Class', ['id', 'Node', 'NodeStatus']],
+        #
+        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation.csv', False, 'Room_Occupancy_Count',
+        #  ['Date', 'Time', 'S6_PIR', 'S7_PIR']],
+        #
+        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention.csv', False,
+        #  'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'TrafficType', 'VisitorType', 'Weekend']],
+        #
+        # ['pen_digits', "../data/pen_digits/pendigits.csv", False, 'digit', []]
 
     ]
 
-    # Add bins versions to dataset list:
     new_datasets = datasets.copy()
-    for ds in datasets:
-        # create_bins(ds[1], cols_to_remove=ds[-1] + [ds[-2]])
-        extension_index = ds[1].find(".csv")
-        bins_filename = ds[1][:extension_index] + "_bins.csv"
-        new_ds = ds.copy()
-        new_ds[1] = bins_filename
-        new_ds[2] = True
-        new_datasets.append(new_ds)
+    # Add bins versions to dataset list:
+    # for ds in datasets:
+    #     # create_bins(ds[1], cols_to_remove=ds[-1] + [ds[-2]])
+    #     extension_index = ds[1].find(".csv")
+    #     bins_filename = ds[1][:extension_index] + "_bins.csv"
+    #     new_ds = ds.copy()
+    #     new_ds[1] = bins_filename
+    #     new_ds[2] = True
+    #     new_datasets.append(new_ds)
 
     all_datasets = sorted(new_datasets, key=lambda x: (x[0], x[2]))
-
-    depths = [6, 7, 8]
+    # depths = [6, 7, 8]
+    depths = [3]
+    min_samples_list = [0]
+    # min_samples_list = [0, 30, 100]
 
     for ds in all_datasets:
         for depth in depths:
-            test = Test(ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4], min_samples_stop=30)
-            # test.run()
+            for min_samples_stop in min_samples_list:
+                test = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4],
+                            min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
+                test.run(debug=True)
 
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results")
+    generate_consolidates_csv("results/algo/consolidated/cart_experiments.csv", "results/algo")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

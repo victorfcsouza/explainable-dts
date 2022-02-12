@@ -4,11 +4,11 @@
 class Node:
     """A decision tree node."""
 
-    def __init__(self, gini, num_samples, num_samples_per_class, predicted_class, feature_index_occurrences=None):
-        self.gini = gini
+    def __init__(self, num_samples, num_samples_per_class, predicted_class, gini=0, feature_index_occurrences=None):
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
         self.predicted_class = predicted_class
+        self.gini = gini
         self.feature_index = 0
         self.feature_index_occurrences = feature_index_occurrences  # number of occurrences for each feature
 
@@ -136,7 +136,7 @@ class Node:
             node.feature_index_occurrences_redundant = _feature_index_redundant_occurs.copy()
 
             # Update feature_index if it is not a leaf
-            if node.feature_index is not None:
+            if node.left is not None and node.right is not None:
                 node.feature_index_occurrences[node.feature_index] += 1
 
             left_node: Node = node.left

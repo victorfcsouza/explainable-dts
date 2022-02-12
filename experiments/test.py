@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from cart.cart import DecisionTreeClassifier
-
 
 class MetricType(Enum):
     factor = "factor"
@@ -42,10 +40,11 @@ class Metrics:
 
 
 class Test:
-    def __init__(self, dataset_name: str, csv_file: str, max_depth_stop: int, bins: bool, col_class_name: str,
-                 cols_to_delete: list = None, min_samples_stop: int = 0,
+    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int, bins: bool,
+                 col_class_name: str, cols_to_delete: list = None, min_samples_stop: int = 0,
                  factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
                           0.97, 0.98, 0.99, 1), results_folder="results"):
+        self.classifier = classifier
         self.dataset_name = dataset_name
         self.csv_file = csv_file
         self.col_class_name = col_class_name
@@ -105,7 +104,7 @@ class Test:
             'bins': self.bins,
             'max_depth_stop': self.max_depth_stop,
             'min_samples_stop': self.min_samples_stop,
-            'opt_factor': self._get_opt_factor(),
+            # 'opt_factor': self._get_opt_factor(),
             'results': [{key.value: metric[key] for key in metric} for metric in self.results]  # Convert to string keys
         }
 
@@ -175,7 +174,7 @@ class Test:
 
         results = []
         for factor in self.factors:
-            dt = DecisionTreeClassifier(max_depth=self.max_depth_stop)
+            dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
 
             print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
