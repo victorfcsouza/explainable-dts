@@ -101,16 +101,18 @@ def generate_consolidates_csv(csv_file, result_dir):
     files = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
     json_files = [f for f in files if 'json' in f]
 
-    header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'max_depth_stop', 'min_samples_stop', 'discrete',
-              'factor', 'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl', 'wapl_redundant']
+    header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'algorithm', 'max_depth_stop', 'min_samples_stop',
+              'discrete', 'factor', 'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl',
+              'wapl_redundant']
     rows = []
     for file in json_files:
         with open(result_dir + "/" + file) as json_file:
             file_data = json.load(json_file)
             for result in file_data['results']:
                 row = [file_data['dataset'], file_data['n_samples'], file_data['n_features'], file_data['n_classes'],
-                       file_data['max_depth_stop'], file_data['min_samples_stop'], file_data['bins']]
-                for it in header[7:]:
+                       file_data['algorithm'], file_data['max_depth_stop'], file_data['min_samples_stop'],
+                       file_data['discrete']]
+                for it in header[8:]:
                     row.append(result[it])
                 rows.append(row)
 
@@ -196,16 +198,17 @@ if __name__ == "__main__":
     min_samples_list = [0]
     # min_samples_list = [0, 30, 100]
 
-    for ds in all_datasets:
-        for depth in depths:
-            for min_samples_stop in min_samples_list:
-                test1 = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-                test2 = Test(DecisionTreeClassifier, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
-                             results_folder="results/cart")
-                test1.run()
-                test2.run()
+    # Run tests
+    # for ds in all_datasets:
+    #     for depth in depths:
+    #         for min_samples_stop in min_samples_list:
+    #             test1 = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3],
+    #                          min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
+    #             test2 = Test(DecisionTreeClassifier, ds[0], ds[1], depth, ds[2], ds[3],
+    #                          min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
+    #                          results_folder="results/cart")
+    #             test1.run()
+    #             test2.run()
 
     generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
     generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")
