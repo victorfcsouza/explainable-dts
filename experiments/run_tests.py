@@ -9,16 +9,9 @@ import numpy as np
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
-import sklearn.tree as sklearn_tree
+from pathlib import Path
 
 RESULTS_FOLDER = "results"
-
-
-def print_score_sklearn(X_train, y_train, X_test, y_test):
-    clf = sklearn_tree.DecisionTreeClassifier(criterion="gini", max_depth=5)
-    clf.fit(X_train, y_train)
-    print("Train accuracy:", round(clf.score(X_train, y_train), 3))
-    print("Test accuracy:", round(clf.score(X_test, y_test), 3))
 
 
 def change_all_jsons(results_folder):
@@ -122,6 +115,10 @@ def generate_consolidates_csv(csv_file, result_dir):
                 rows.append(row)
 
     rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6], x[7]))
+    # Create dir if not exists
+    dir_index = csv_file.rfind("/")
+    dir_name = csv_file[:dir_index]
+    Path(dir_name).mkdir(parents=True, exist_ok=True)
     with open(csv_file, 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         # write the header
@@ -130,37 +127,56 @@ def generate_consolidates_csv(csv_file, result_dir):
         writer.writerows(rows)
 
 
+def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
+    """
+    For the categorical (and not numerical) columns, apply one hot encoding
+    """
+    data = pd.read_csv(csv_file)
+    if cols_to_remove:
+        data = data.drop(columns=cols_to_remove)
+    if categorical_cols:
+        prefix_names = {col: f"dummy_{col}" for col in categorical_cols}
+        data = pd.get_dummies(data, columns=categorical_cols, prefix=prefix_names)
+
+    index_str = csv_file.find(".csv")
+    outfile = csv_file[:index_str] + "_formatted.csv"
+    data.to_csv(outfile, encoding='utf-8', index=False)
+
+
 if __name__ == "__main__":
     datasets = [
-        # name, path, bin, col_name, cols_to_delete
-        # ['avila', '../data/avila/avila.csv', False, 'Class', []],
-        #
-        # ['cardiotocography', '../data/cardiotocography/CTG.csv', False, 'CLASS',
-        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
-        #
-        # ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card.csv", False,
-        #  'default payment next month', ['ID', 'SEX', 'EDUCATION', 'MARRIAGE', 'PAY_0', 'PAY_2', 'PAY_3',
-        #                                 'PAY_4', 'PAY_5', 'PAY_6']],
+        # name, path, bin, col_class_name, categorical_cols, cols_to_delete
+        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
 
-        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset.csv", False, 'Class', []],
+        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
 
-        # ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state.csv', False, 'eyeDetection', []],
-        #
-        # ['letter_recognition', '../data/letter_recognition/letter-recognition.csv', False, 'lettr', []],
-        #
-        # ['obs_network', '../data/obs_network/obs_network_dataset.csv', False, 'Class', ['id', 'Node', 'NodeStatus']],
-        #
-        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation.csv', False, 'Room_Occupancy_Count',
-        #  ['Date', 'Time', 'S6_PIR', 'S7_PIR']],
-        #
-        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention.csv', False,
-        #  'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'TrafficType', 'VisitorType', 'Weekend']],
-        #
-        # ['pen_digits', "../data/pen_digits/pendigits.csv", False, 'digit', []]
+        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
+         'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
+
+        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+
+        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
+
+         # deu erro max_depth 8
+        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+
+        # deu erro
+        # ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class', ['Node', 'NodeStatus'],
+        #  ['id']],
+
+        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+         [], ['Date', 'Time']],
+
+        # Should also include 'TrafficType' for categorial col, but has many values
+        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+
+        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
 
     ]
 
-    new_datasets = datasets.copy()
+    # new_datasets = datasets.copy()
     # Add bins versions to dataset list:
     # for ds in datasets:
     #     # create_bins(ds[1], cols_to_remove=ds[-1] + [ds[-2]])
@@ -171,20 +187,28 @@ if __name__ == "__main__":
     #     new_ds[2] = True
     #     new_datasets.append(new_ds)
 
-    all_datasets = sorted(new_datasets, key=lambda x: (x[0], x[2]))
-    # depths = [6, 7, 8]
-    depths = [3]
+    # Apply one hot encoding to datasets:
+    # for ds in datasets:
+    #     one_hot_encoding(ds[1], ds[4], ds[5])
+
+    all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
+    depths = [6, 7, 8]
     min_samples_list = [0]
     # min_samples_list = [0, 30, 100]
 
     for ds in all_datasets:
         for depth in depths:
             for min_samples_stop in min_samples_list:
-                test = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3], cols_to_delete=ds[4],
-                            min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-                test.run(debug=True)
+                test1 = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
+                test2 = Test(DecisionTreeClassifier, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
+                             results_folder="results/cart")
+                test1.run()
+                test2.run()
 
-    generate_consolidates_csv("results/algo/consolidated/cart_experiments.csv", "results/algo")
+    generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
+    generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

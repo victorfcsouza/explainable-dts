@@ -4,6 +4,7 @@ from matplotlib.pyplot import figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 
@@ -40,7 +41,7 @@ class Metrics:
 
 
 class Test:
-    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int, bins: bool,
+    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int, discrete: bool,
                  col_class_name: str, cols_to_delete: list = None, min_samples_stop: int = 0,
                  factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
                           0.97, 0.98, 0.99, 1), results_folder="results"):
@@ -51,7 +52,7 @@ class Test:
         self.cols_to_delete = cols_to_delete
         self.max_depth_stop = max_depth_stop
         self.min_samples_stop = min_samples_stop
-        self.bins = bins
+        self.discrete = discrete
         self.results_folder = results_folder
         self.factors = factors
         self.n_classes = None
@@ -60,9 +61,8 @@ class Test:
         self.results = None  # Need to update via test_dataset
 
     def _get_filename(self, extension: str) -> str:
-        filename = f"{self.results_folder}/{self.dataset_name}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}_bins_{self.bins}." + \
-                   extension
+        filename = f"{self.results_folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
+                   f"_samples_{self.min_samples_stop}_discrete_{self.discrete}." + extension
         return filename
 
     def _plot_graphic(self):
@@ -76,7 +76,7 @@ class Test:
 
         figure(figsize=(12, 10), dpi=300)
         plt.subplot(2, 1, 1)
-        dataset_name = self.dataset_name if not self.bins else f"{self.dataset_name} with bin"
+        dataset_name = self.dataset_name if not self.discrete else f"{self.dataset_name} with bin"
         plt.title(dataset_name, fontsize=16)
         plt.plot(factors, train_accuracy_list, label="Train Accuracy", color='red', marker='o')
         plt.plot(factors, test_accuracy_list, label="Test Accuracy", color='darkred', marker='o')
@@ -98,16 +98,20 @@ class Test:
         filename: str = self._get_filename("json")
         result_json = {
             'dataset': self.dataset_name,
+            'algorithm': self.classifier.__name__,
             'n_samples': self.n_samples,
             'n_features': self.n_features,
             'n_classes': self.n_classes,
-            'bins': self.bins,
+            'discrete': self.discrete,
             'max_depth_stop': self.max_depth_stop,
             'min_samples_stop': self.min_samples_stop,
             # 'opt_factor': self._get_opt_factor(),
             'results': [{key.value: metric[key] for key in metric} for metric in self.results]  # Convert to string keys
         }
-
+        # Create dir if not exists
+        dir_index = filename.rfind("/")
+        dir_name = filename[:dir_index]
+        Path(dir_name).mkdir(parents=True, exist_ok=True)
         with open(filename, 'w') as f:
             json.dump(result_json, f, indent=2)
 
@@ -141,8 +145,9 @@ class Test:
 
     def run(self, store_results=True, plot_graphic=False, debug=False):
         print("############################")
-        print(f"### Running tests for {self.dataset_name} with max_depth {self.max_depth_stop},"
-              f" min_samples_stop {self.min_samples_stop} and discrete = {self.bins}")
+        print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop} "
+              f"and discrete = {self.discrete}")
 
         # Read CSV
         np.set_printoptions(suppress=True)
@@ -203,5 +208,6 @@ class Test:
         if store_results:
             self._store_results()
 
-        print(f"### Ended tests for {self.dataset_name} with max_depth {self.max_depth_stop},"
-              f"min_samples_stop {self.min_samples_stop} and discrete = {self.bins}")
+        print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__},"
+              f" max_depth {self.max_depth_stop}," f"min_samples_stop {self.min_samples_stop}"
+              f" and discrete = {self.discrete}")
