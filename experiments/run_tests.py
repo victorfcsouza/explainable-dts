@@ -1,6 +1,6 @@
 from experiments.test import MetricType, Test
-from algorithms.cart import DecisionTreeClassifier
-from algorithms.algo import AlgoClassifier
+from algorithms.cart import Cart
+from algorithms.algo import Algo
 
 import csv
 import json
@@ -148,38 +148,39 @@ def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
 if __name__ == "__main__":
     datasets = [
         # name, path, bin, col_class_name, categorical_cols, cols_to_delete
-        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
-
-        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
-         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
+        # ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
+        #
+        # ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
 
         ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
          'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
 
-        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+        # ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
 
         ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
 
-         # deu erro max_depth 8
-        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
 
-        # deu erro
+        # deu erro max_depth 8
+        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+        #
+        # # deu erro
         # ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class', ['Node', 'NodeStatus'],
         #  ['id']],
-
-        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
-         [], ['Date', 'Time']],
-
-        # Should also include 'TrafficType' for categorial col, but has many values
-        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
-         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
-
-        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
+        #
+        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+        #  [], ['Date', 'Time']],
+        #
+        # # Should also include 'TrafficType' for categorial col, but has many values
+        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+        #  False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+        #
+        # ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
 
     ]
 
     # new_datasets = datasets.copy()
-    # Add bins versions to dataset list:
+    # Add discrete versions to dataset list:
     # for ds in datasets:
     #     # create_bins(ds[1], cols_to_remove=ds[-1] + [ds[-2]])
     #     extension_index = ds[1].find(".csv")
@@ -199,16 +200,16 @@ if __name__ == "__main__":
     # min_samples_list = [0, 30, 100]
 
     # Run tests
-    # for ds in all_datasets:
-    #     for depth in depths:
-    #         for min_samples_stop in min_samples_list:
-    #             test1 = Test(AlgoClassifier, ds[0], ds[1], depth, ds[2], ds[3],
-    #                          min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-    #             test2 = Test(DecisionTreeClassifier, ds[0], ds[1], depth, ds[2], ds[3],
-    #                          min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
-    #                          results_folder="results/cart")
-    #             test1.run()
-    #             test2.run()
+    for ds in all_datasets:
+        for depth in depths:
+            for min_samples_stop in min_samples_list:
+                test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
+                test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
+                             results_folder="results/cart")
+                test1.run()
+                test2.run()
 
     generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
     generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")

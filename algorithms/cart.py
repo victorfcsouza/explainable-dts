@@ -1,9 +1,11 @@
 """Implementation of the CART algorithm to train decision tree classifiers."""
-from algorithms.default_algorithm import DefaultClassifier
 import numpy as np
 
+from algorithms.default_algorithm import DefaultClassifier
+from tree import tree
 
-class DecisionTreeClassifier(DefaultClassifier):
+
+class Cart(DefaultClassifier):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
@@ -75,3 +77,37 @@ class DecisionTreeClassifier(DefaultClassifier):
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2  # midpoint
 
         return best_idx, best_thr
+
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True):
+        """Build a decision tree by recursively finding the best split."""
+        # Population for each class in current node. The predicted class is the one with
+        # largest population.
+        num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]
+        predicted_class = np.argmax(num_samples_per_class)
+        node = tree.Node(
+            num_samples=y.size,
+            num_samples_per_class=num_samples_per_class,
+            predicted_class=predicted_class,
+            feature_index_occurrences=feature_index_occurrences.copy()
+        )
+        if calculate_gini:
+            node.gini = self._gini(y)
+
+        # Split recursively until maximum depth is reached.
+        if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
+            idx, thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
+                                        modified_factor=modified_factor)
+            if idx is not None:
+                indices_left = X[:, idx] < thr
+                X_left, y_left = X[indices_left], y[indices_left]
+                X_right, y_right = X[~indices_left], y[~indices_left]
+                node.feature_index = idx
+                node.threshold = thr
+                node.feature_index_occurrences[idx] += 1
+                node.left = self._grow_tree(X_left, y_left, depth + 1,
+                                            feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                node.right = self._grow_tree(X_right, y_right, depth + 1,
+                                             feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                             modified_factor=modified_factor, calculate_gini=calculate_gini)
+        return node

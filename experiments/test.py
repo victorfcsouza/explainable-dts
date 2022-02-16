@@ -190,8 +190,8 @@ class Test:
                     class_names=["Class {}".format(i) for i in range(len(y_train))],
                     show_details=True
                 )
-            print(f"max_depth:  {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl},"
-                  f" wapl_redundant: {wapl_redundant}")
+            print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl}, "
+                  f"wapl_redundant: {wapl_redundant}")
             results.append({
                 MetricType.factor: round(factor, 2),
                 MetricType.train_accuracy: round(score_train, 3),
@@ -208,6 +208,6 @@ class Test:
         if store_results:
             self._store_results()
 
-        print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__},"
-              f" max_depth {self.max_depth_stop}," f"min_samples_stop {self.min_samples_stop}"
-              f" and discrete = {self.discrete}")
+        print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop} "
+              f"and discrete = {self.discrete}")

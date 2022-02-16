@@ -4,12 +4,13 @@
 class Node:
     """A decision tree node."""
 
-    def __init__(self, num_samples, num_samples_per_class, predicted_class, gini=0, feature_index_occurrences=None):
+    def __init__(self, num_samples, num_samples_per_class, predicted_class, gini=0, feature_index=None, threshold=None,
+                 feature_index_occurrences=None):
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
         self.predicted_class = predicted_class
         self.gini = gini
-        self.feature_index = 0
+        self.feature_index = feature_index
         self.feature_index_occurrences = feature_index_occurrences  # number of occurrences for each feature
 
         # for each feature, +1 if feature x_i appears in x_i > j,
@@ -18,7 +19,7 @@ class Node:
         # 0 otherwise
         self.feature_index_occurrences_redundant = None
 
-        self.threshold = 0
+        self.threshold = threshold
         self.left = None
         self.right = None
 

@@ -1,9 +1,11 @@
-from algorithms.default_algorithm import DefaultClassifier
-
 import math
+import numpy as np
+
+from algorithms.default_algorithm import DefaultClassifier
+from tree import tree
 
 
-class AlgoClassifier(DefaultClassifier):
+class Algo(DefaultClassifier):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
@@ -37,7 +39,6 @@ class AlgoClassifier(DefaultClassifier):
         Returns the number of pairs that have different classes
         """
         count = 0
-        equal_numbers = 0
         y_sorted = sorted(y)
 
         i = 1
@@ -53,10 +54,15 @@ class AlgoClassifier(DefaultClassifier):
 
     def _get_best_threshold(self, X, y, a):
         """
-        Get threshold that minimizes _cost for attribute a. Also, returns that cost
+        Get threshold that minimizes _cost for attribute a. Also, returns that cost and all thresholds
         """
         a_values = list(set(X[:, a]))
         thresholds = [(a_values[i] + a_values[i - 1]) / 2 for i in range(1, len(a_values))]
+
+        # In case of attributes with only one value
+        if not thresholds:
+            thresholds = [a_values[0]]
+
         min_cost = math.inf
         t_best = 0
         for t in thresholds:
@@ -65,23 +71,7 @@ class AlgoClassifier(DefaultClassifier):
                 t_best = t
                 min_cost = cost
 
-        return t_best, min_cost
-
-    def _get_best_attr(self, X, y):
-        """
-        Get attribute and threshold that minimizes cost. Also, return that cost
-        """
-        min_cost = math.inf
-        a_best = 0
-        t_best = 0
-        for a in range(len(X)):
-            t_best_for_a, min_cost_for_a = self._get_best_threshold(X, y, a)
-            if min_cost_for_a < min_cost:
-                min_cost = min_cost_for_a
-                a_best = a
-                t_best = t_best_for_a
-
-        return a_best, t_best, min_cost
+        return t_best, min_cost, thresholds
 
     def _cost(self, X, y, a, t):
         """
@@ -102,28 +92,149 @@ class AlgoClassifier(DefaultClassifier):
         Returns:
             best_idx: Index of the feature for best split, or None if no split is found.
             best_thr: Threshold to use for the split, or None if no split is found.
+            next_thr: If 3-split is necessary, returns the
         """
         # Need at least two elements to split a node.
         m = y.size
         if m <= 1:
-            return None, None
+            return None, None, None
 
         node_product = self._number_pairs(y) * len(y)
-        cost_min = node_product
-        a_best = 0  # For the 2 level split
-        t_best = 0  # For the 2 level split
+
+        # variables for the 2-step partition
+        a_best = None  # attribute that minimizes cost and satisfies cost <= 2/3 * node_product
+        t_best = None  # attribute relative to previous attribute
+        cost_best = node_product
+
+        # variables for the 3-step partition
+        a_min = None  # a* - attribute that minimizes cost
+        t_min = None  # t* - threshold relative to previous attribute
+        cost_min = math.inf
+
+        all_thresholds = []  # List of lists of all thresholds for each attribute
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_best, cost_a = self._get_best_threshold(X, y, a)
-            if cost_a <= (2 / 3) * node_product:
-                return a, threshold_a_best
+            threshold_a_best, cost_a, all_thresholds_a = self._get_best_threshold(X, y, a)
+            all_thresholds.append(all_thresholds_a)
             if cost_a < cost_min:
+                a_min = a
+                t_min = threshold_a_best
                 cost_min = cost_a
+            if cost_a < cost_best and cost_a <= (2 / 3) * node_product:
                 a_best = a
                 t_best = threshold_a_best
+                cost_best = cost_a
 
-        raise RuntimeError("No split done yet! Perform a 2 level split")
+        if a_best is not None:
+            return a_best, t_best, None
+
+        # Else, Perform a 3-step partition
+        X_left, y_left = self._set_objects(X, y, a_min, 'leq', t_min)
+        X_right, y_right = self._set_objects(X, y, a_min, 'gt', t_min)
+        thresholds = all_thresholds[a_min]
+        t_index = thresholds.index(t_min)
+
+        # TODO: Here we can reutilize these calculation from cost functions and run faster
+        if self._number_pairs(y_left) * len(y_left) > (2 / 3) * node_product and t_index > 0:
+            return a_min, t_min, thresholds[t_index - 1]
+        elif self._number_pairs(y_right) * len(y_right) > (2 / 3) * node_product and t_index < len(thresholds) - 1:
+            return a_min, t_min, thresholds[t_index + 1]
+        else:
+            return a_min, t_min, None
+
+    def _create_node(self, y, feature_index=None, threshold=None, feature_index_occurrences=None, calculate_gini=True):
+        num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]
+        predicted_class = np.argmax(num_samples_per_class)
+        node = tree.Node(
+            num_samples=y.size,
+            num_samples_per_class=num_samples_per_class,
+            predicted_class=predicted_class,
+            feature_index=feature_index,
+            threshold=threshold,
+            feature_index_occurrences=feature_index_occurrences.copy()
+        )
+        if calculate_gini:
+            node.gini = self._gini(y)
+
+        return node
+
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=False):
+        """Build a decision tree by recursively finding the best split."""
+        # Population for each class in current node. The predicted class is the one with
+        # largest population.
+        node = self._create_node(y, feature_index_occurrences=feature_index_occurrences, calculate_gini=calculate_gini)
+
+        # Split recursively until maximum depth is reached.
+        if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
+            idx, thr, next_thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
+                                                  modified_factor=modified_factor)
+            if idx is not None:
+                indices_left = X[:, idx] <= thr
+                X_left, y_left = X[indices_left], y[indices_left]
+                X_right, y_right = X[~indices_left], y[~indices_left]
+                node.feature_index = idx
+                node.threshold = thr
+                node.feature_index_occurrences[idx] += 1
+
+                # 2-split
+                if next_thr is None:
+                    node.left = self._grow_tree(X_left, y_left, depth + 1,
+                                                feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                                modified_factor=modified_factor, calculate_gini=calculate_gini)
+                    node.right = self._grow_tree(X_right, y_right, depth + 1,
+                                                 feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                                 modified_factor=modified_factor, calculate_gini=calculate_gini)
+                # 3-split on the left
+                elif next_thr < thr:
+                    child_features = node.feature_index_occurrences.copy()
+                    child_features[idx] += 1
+                    left_node = self._create_node(y_left, feature_index=idx, threshold=next_thr,
+                                                  feature_index_occurrences=child_features,
+                                                  calculate_gini=calculate_gini)
+                    indices_left = X_left[:, idx] <= thr
+                    X_left_left, y_left_left = X_left[indices_left], y_left[indices_left]
+                    X_left_right, y_left_right = X_left[~indices_left], y_left[~indices_left]
+                    node.left = left_node
+                    if depth + 1 < self.max_depth and left_node.num_samples >= self.min_samples_stop:
+                        left_node.left = \
+                            self._grow_tree(X_left_left, y_left_left, depth + 2,
+                                            feature_index_occurrences=left_node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                        left_node.right = \
+                            self._grow_tree(X_left_right, y_left_right, depth + 2,
+                                            feature_index_occurrences=left_node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                    node.right = self._grow_tree(X_right, y_right, depth + 1,
+                                                 feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                                 modified_factor=modified_factor, calculate_gini=calculate_gini)
+
+                # 3-split on the right
+                elif next_thr > thr:
+                    child_features = node.feature_index_occurrences.copy()
+                    child_features[idx] += 1
+                    right_node = self._create_node(y_right, feature_index=idx, threshold=next_thr,
+                                                   feature_index_occurrences=child_features,
+                                                   calculate_gini=calculate_gini)
+                    indices_right = X_right[:, idx] <= thr
+                    X_right_left, y_right_left = X_right[indices_right], y_right[indices_right]
+                    X_right_right, y_right_right = X_right[~indices_right], y_right[~indices_right]
+                    node.right = right_node
+                    node.left = self._grow_tree(X_left, y_left, depth + 1,
+                                                feature_index_occurrences=node.feature_index_occurrences.copy(),
+                                                modified_factor=modified_factor, calculate_gini=calculate_gini)
+                    if depth + 1 < self.max_depth and right_node.num_samples >= self.min_samples_stop:
+                        right_node.left = \
+                            self._grow_tree(X_right_left, y_right_left, depth + 2,
+                                            feature_index_occurrences=right_node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                        right_node.right = \
+                            self._grow_tree(X_right_right, y_right_right, depth + 2,
+                                            feature_index_occurrences=right_node.feature_index_occurrences.copy(),
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                else:
+                    raise ValueError("Threshold not permitted!")
+        return node
 
     def fit(self, X, y, modified_factor=1):
         """Build decision tree classifier."""

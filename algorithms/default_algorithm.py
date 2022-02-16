@@ -45,48 +45,11 @@ class DefaultClassifier:
         m = y.size
         return 1.0 - sum((np.sum(y == c) / m) ** 2 for c in range(self.n_classes_))
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
-        raise NotImplementedError()
-
-    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True):
-        """Build a decision tree by recursively finding the best split."""
-        # Population for each class in current node. The predicted class is the one with
-        # largest population.
-        num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]
-        predicted_class = np.argmax(num_samples_per_class)
-        node = tree.Node(
-            num_samples=y.size,
-            num_samples_per_class=num_samples_per_class,
-            predicted_class=predicted_class,
-            feature_index_occurrences=feature_index_occurrences.copy()
-        )
-        if calculate_gini:
-            node.gini = self._gini(y)
-
-        # Split recursively until maximum depth is reached.
-        if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
-            idx, thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
-                                        modified_factor=modified_factor)
-            if idx is not None:
-                indices_left = X[:, idx] < thr
-                X_left, y_left = X[indices_left], y[indices_left]
-                X_right, y_right = X[~indices_left], y[~indices_left]
-                node.feature_index = idx
-                node.threshold = thr
-                node.feature_index_occurrences[idx] += 1
-                node.left = self._grow_tree(X_left, y_left, depth + 1,
-                                            feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor)
-                node.right = self._grow_tree(X_right, y_right, depth + 1,
-                                             feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                             modified_factor=modified_factor)
-        return node
-
     def _predict(self, inputs):
         """Predict class for a single sample."""
         node = self.tree_
         while node.left:
-            if inputs[node.feature_index] < node.threshold:
+            if inputs[node.feature_index] <= node.threshold:
                 node = node.left
             else:
                 node = node.right
@@ -99,3 +62,9 @@ class DefaultClassifier:
     def get_explainability_metrics(self):
         # Returns max_depth, max_depth_redundant, wapl, wapl_redundant
         return self.tree_.get_explainability_metrics(self.n_features_)
+
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
+        raise NotImplementedError()
+
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True):
+        raise NotImplementedError()
