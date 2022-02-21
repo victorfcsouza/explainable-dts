@@ -52,13 +52,12 @@ class Algo(DefaultClassifier):
             i += 1
         return count
 
-    def _get_best_threshold(self, X, y, a):
+    def _get_best_threshold_old(self, X, y, a):
         """
         Get threshold that minimizes _cost for attribute a. Also, returns that cost and all thresholds
         """
-        a_values = list(set(X[:, a]))
+        a_values = sorted(list(set(X[:, a])))
         thresholds = [(a_values[i] + a_values[i - 1]) / 2 for i in range(1, len(a_values))]
-
         # In case of attributes with only one value
         if not thresholds:
             thresholds = [a_values[0]]
@@ -72,6 +71,41 @@ class Algo(DefaultClassifier):
                 min_cost = cost
 
         return t_best, min_cost, thresholds
+
+    def _get_best_threshold(self, X, y, a):
+        m = y.size  # tirar
+        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
+        thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
+        classes_left = [0] * self.n_classes_
+        classes_right = classes_parent.copy()
+        pairs_left = 0
+        pairs_right = self._number_pairs(y)
+        node_product = pairs_right * len(y)  # tirar
+        cost_min = math.inf
+        cost_best_balanced = math.inf
+        t_min = None
+        t_best_balanced = None
+        all_thresholds = []
+        for i in range(1, m):
+            node_class = classes_thr[i - 1]
+            classes_left[node_class] += 1
+            classes_right[node_class] -= 1
+            pairs_left += sum([classes_left[j] for j in range(self.n_classes_) if j != node_class])
+            pairs_right -= sum([classes_right[j] for j in range(self.n_classes_) if j != node_class])
+            if thresholds[i] == thresholds[i - 1]:
+                continue
+            threshold = (thresholds[i] + thresholds[i - 1]) / 2
+            all_thresholds.append(threshold)
+            prod_left = i * pairs_left
+            prod_right = (m - i) * pairs_right
+            cost = max(prod_left, prod_right)
+            if cost < cost_min:
+                cost_min = cost
+                t_min = threshold
+            if cost <= (2 / 3) * node_product and cost < cost_best_balanced:
+                cost_best_balanced = cost
+                t_best_balanced = threshold
+        return t_best_balanced, cost_best_balanced, t_min, cost_min, all_thresholds
 
     def _cost(self, X, y, a, t):
         """
@@ -102,46 +136,48 @@ class Algo(DefaultClassifier):
         node_product = self._number_pairs(y) * len(y)
 
         # variables for the 2-step partition
-        a_best = None  # attribute that minimizes cost and satisfies cost <= 2/3 * node_product
-        t_best = None  # attribute relative to previous attribute
-        cost_best = node_product
+        a_min_balanced = None  # attribute that minimizes cost and satisfies cost <= 2/3 * node_product
+        t_min_balanced = None  # attribute relative to previous attribute
+        cost_min_balanced = node_product
 
         # variables for the 3-step partition
         a_min = None  # a* - attribute that minimizes cost
         t_min = None  # t* - threshold relative to previous attribute
         cost_min = math.inf
-
-        all_thresholds = []  # List of lists of all thresholds for each attribute
-
+        all_thresholds = []
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_best, cost_a, all_thresholds_a = self._get_best_threshold(X, y, a)
-            all_thresholds.append(all_thresholds_a)
-            if cost_a < cost_min:
+            threshold_a_balanced, cost_a_balanced, threshold_a_min, cost_a_min, thresholds_a =\
+                self._get_best_threshold(X, y, a)
+            all_thresholds.append(thresholds_a)
+            if cost_a_min < cost_min:
                 a_min = a
-                t_min = threshold_a_best
-                cost_min = cost_a
-            if cost_a < cost_best and cost_a <= (2 / 3) * node_product:
-                a_best = a
-                t_best = threshold_a_best
-                cost_best = cost_a
+                t_min = threshold_a_min
+                cost_min = cost_a_min
+            if cost_a_balanced < cost_min_balanced:
+                a_min_balanced = a
+                t_min_balanced = threshold_a_balanced
+                cost_min_balanced = cost_a_balanced
 
-        if a_best is not None:
-            return a_best, t_best, None
+        if a_min_balanced is not None:
+            return a_min_balanced, t_min_balanced, None
 
         # Else, Perform a 3-step partition
-        X_left, y_left = self._set_objects(X, y, a_min, 'leq', t_min)
-        X_right, y_right = self._set_objects(X, y, a_min, 'gt', t_min)
-        thresholds = all_thresholds[a_min]
-        t_index = thresholds.index(t_min)
+        if t_min is not None:
+            X_left, y_left = self._set_objects(X, y, a_min, 'leq', t_min)
+            X_right, y_right = self._set_objects(X, y, a_min, 'gt', t_min)
+            thresholds = all_thresholds[a_min]
+            t_index = thresholds.index(t_min)
 
-        # TODO: Here we can reutilize these calculation from cost functions and run faster
-        if self._number_pairs(y_left) * len(y_left) > (2 / 3) * node_product and t_index > 0:
-            return a_min, t_min, thresholds[t_index - 1]
-        elif self._number_pairs(y_right) * len(y_right) > (2 / 3) * node_product and t_index < len(thresholds) - 1:
-            return a_min, t_min, thresholds[t_index + 1]
+            # TODO: Here we can reutilize these calculation from cost functions and run faster
+            if self._number_pairs(y_left) * len(y_left) > (2 / 3) * node_product and t_index > 0:
+                return a_min, t_min, thresholds[t_index - 1]
+            elif self._number_pairs(y_right) * len(y_right) > (2 / 3) * node_product and t_index < len(thresholds) - 1:
+                return a_min, t_min, thresholds[t_index + 1]
+            else:
+                return a_min, t_min, None
         else:
-            return a_min, t_min, None
+            return None, None, None
 
     def _create_node(self, y, feature_index=None, threshold=None, feature_index_occurrences=None, calculate_gini=True):
         num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]

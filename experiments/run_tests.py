@@ -148,39 +148,38 @@ def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
 if __name__ == "__main__":
     datasets = [
         # name, path, bin, col_class_name, categorical_cols, cols_to_delete
-        # ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
-        #
-        # ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
-        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
+        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
+
+        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
 
         ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
          'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
 
-        # ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
 
         ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
 
-
         # deu erro max_depth 8
-        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
-        #
-        # # deu erro
-        # ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class', ['Node', 'NodeStatus'],
-        #  ['id']],
-        #
-        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
-        #  [], ['Date', 'Time']],
-        #
-        # # Should also include 'TrafficType' for categorial col, but has many values
-        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
-        #  False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
-        #
-        # ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
+        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+
+        # deu erro
+        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class', ['Node', 'NodeStatus'],
+         ['id']],
+
+        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+         [], ['Date', 'Time']],
+
+        # Should also include 'TrafficType' for categorial col, but has many values
+        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+
+        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
 
     ]
 
-    # new_datasets = datasets.copy()
     # Add discrete versions to dataset list:
+    # new_datasets = datasets.copy()
     # for ds in datasets:
     #     # create_bins(ds[1], cols_to_remove=ds[-1] + [ds[-2]])
     #     extension_index = ds[1].find(".csv")
