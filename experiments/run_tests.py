@@ -1,6 +1,7 @@
 from experiments.test import MetricType, Test
 from algorithms.cart import Cart
 from algorithms.algo import Algo
+from algorithms.algo_with_gini import AlgoWithGini
 
 import csv
 import json
@@ -202,16 +203,21 @@ if __name__ == "__main__":
     for ds in all_datasets:
         for depth in depths:
             for min_samples_stop in min_samples_list:
-                test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-                test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
-                             results_folder="results/cart")
-                test1.run()
-                test2.run()
+                # test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
+                #              min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
+                # test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
+                #              min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
+                #              results_folder="results/cart")
+                test3 = Test(AlgoWithGini, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[1],
+                             results_folder="results/algo_gini")
+                # test1.run()
+                # test2.run()
+                # test3.run()
 
     generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
     generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")
+    generate_consolidates_csv("results/algo_gini/consolidated/algo_gini_experiments.csv", "results/algo_gini")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
