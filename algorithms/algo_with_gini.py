@@ -8,15 +8,13 @@ class AlgoWithGini(Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _get_best_threshold(self, X, y, a):
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
         m = y.size  # tirar
-        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
-        pairs_right = self._number_pairs(y)
-        node_product = pairs_right * len(y)  # tirar
+        pairs_right = node_pairs
         cost_min = math.inf
         t_min = None
         t_best_gini = None
@@ -64,7 +62,9 @@ class AlgoWithGini(Algo):
         if m <= 1:
             return None, None, None
 
-        node_product = self._number_pairs(y) * len(y)
+        node_pairs = self._number_pairs(y)
+        node_product = node_pairs * y.size
+        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
 
         # variables for the 2-step partition
         a_min_gini = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
@@ -76,19 +76,22 @@ class AlgoWithGini(Algo):
         t_min = None  # t* - threshold relative to previous attribute
         cost_min = math.inf
         all_thresholds = []
+
         # Loop through all features.
         for a in range(self.n_features_):
             threshold_a_gini, gini_a, threshold_a_min, cost_a_min, thresholds_a = \
-                self._get_best_threshold(X, y, a)
+                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
+            modified_gini_a = gini_a * modified_factor if feature_index_occurrences[a] else gini_a
+
             all_thresholds.append(thresholds_a)
             if cost_a_min < cost_min:
                 a_min = a
                 t_min = threshold_a_min
                 cost_min = cost_a_min
-            if gini_a < min_gini:
+            if modified_gini_a < min_gini:
                 a_min_gini = a
                 t_min_gini = threshold_a_gini
-                min_gini = gini_a
+                min_gini = modified_gini_a
 
         if a_min_gini is not None:
             return a_min_gini, t_min_gini, None

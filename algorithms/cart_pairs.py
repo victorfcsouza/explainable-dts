@@ -2,64 +2,21 @@ import numpy as np
 import math
 
 from algorithms.cart import Cart
+from algorithms.algo import Algo
 from tree import tree
 
 
-class CartPairs(Cart):
+class CartPairs(Cart, Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    @staticmethod
-    def _set_objects(X, y, a, condition, value):
-        """
-        Calculate the set of objects in :param X that have a condition in attribute index attribute :param a.
-        Condition can be: "eq",  "leq" or "gt" compared to :param value
-
-        Return subsets X, y that satisfies condition
-        """
-        result_X = []
-        result_y = []
-
-        for i in range(len(y)):
-            if condition == 'eq' and X[i][a] == value:
-                result_X.append(X[i])
-                result_y.append(y[i])
-            elif condition == 'leq' and X[i][a] <= value:
-                result_X.append(X[i])
-                result_y.append(y[i])
-            elif condition == 'gt' and X[i][a] > value:
-                result_X.append(X[i])
-                result_y.append(y[i])
-
-        return result_X, result_y
-
-    @staticmethod
-    def _number_pairs(y):
-        """
-        Returns the number of pairs that have different classes
-        """
-        count = 0
-        y_sorted = sorted(y)
-
-        i = 1
-        j = 0
-        n = len(y)
-        while i < n:
-            while i < n and y_sorted[i] == y_sorted[i - 1]:
-                i += 1
-            count += (i - j) * (n - i)
-            j = i
-            i += 1
-        return count
-
-    def _get_best_threshold(self, X, y, a):
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
         m = y.size  # tirar
-        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
-        pairs_right = self._number_pairs(y)
+        pairs_right = node_pairs
         t_best = None
         cost_best = math.inf
 
@@ -102,11 +59,14 @@ class CartPairs(Cart):
         # Best cost (Gini in terms of pairs)
         best_cost = math.inf
 
+        node_pairs = self._number_pairs(y)
+        node_product = node_pairs * y.size
+        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
         best_idx, best_thr = None, None
 
         # Loop through all features.
         for idx in range(self.n_features_):
-            t_best_a, cost_best_a = self._get_best_threshold(X, y, idx)
+            t_best_a, cost_best_a = self._get_best_threshold(X, y, idx, classes_parent, node_pairs, node_product)
             if cost_best_a < best_cost:
                 best_cost = cost_best_a
                 best_idx = idx
@@ -147,3 +107,12 @@ class CartPairs(Cart):
                                              feature_index_occurrences=node.feature_index_occurrences.copy(),
                                              modified_factor=modified_factor, calculate_gini=calculate_gini)
         return node
+
+    def fit(self, X, y, modified_factor=1):
+        """Build decision tree classifier."""
+        self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
+        self.n_samples = len(y)
+        self.n_features_ = X.shape[1]
+        feature_index_occurrences = [0] * self.n_features_
+        self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
+                                     modified_factor=modified_factor, calculate_gini=False)

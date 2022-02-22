@@ -206,19 +206,21 @@ if __name__ == "__main__":
             for min_samples_stop in min_samples_list:
                 # test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
                 #              min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-                # test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
-                #              min_samples_stop=min_samples_stop, factors=[0.8, 0.9, 0.95, 1],
-                #              results_folder="results/cart")
-                # test3 = Test(AlgoWithGini, ds[0], ds[1], depth, ds[2], ds[3],
+                test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94,
+                                                                         0.95, 0.96, 0.97, 0.98, 0.99, 1],
+                             results_folder="results/cart")
+                test3 = Test(AlgoWithGini, ds[0], ds[1], depth, ds[2], ds[3],
+                             min_samples_stop=min_samples_stop, factors=[0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94,
+                                                                         0.95, 0.96, 0.97, 0.98, 0.99, 1],
+                             results_folder="results/algo_gini")
+                # test4 = Test(CartPairs, ds[0], ds[1], depth, ds[2], ds[3],
                 #              min_samples_stop=min_samples_stop, factors=[1],
-                #              results_folder="results/algo_gini")
-                test4 = Test(CartPairs, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[1],
-                             results_folder="results/cart_pairs")
+                #              results_folder="results/cart_pairs")
                 # test1.run()
-                # test2.run()
-                # test3.run()
-                test4.run()
+                test2.run()
+                test3.run()
+                # test4.run()
 
     # generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
     # generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")

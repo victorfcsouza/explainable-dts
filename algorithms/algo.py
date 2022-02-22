@@ -72,15 +72,13 @@ class Algo(DefaultClassifier):
 
         return t_best, min_cost, thresholds
 
-    def _get_best_threshold(self, X, y, a):
-        m = y.size  # tirar
-        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
+        m = y.size
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
-        pairs_right = self._number_pairs(y)
-        node_product = pairs_right * len(y)  # tirar
+        pairs_right = node_pairs
         cost_min = math.inf
         cost_best_balanced = math.inf
         t_min = None
@@ -133,7 +131,9 @@ class Algo(DefaultClassifier):
         if m <= 1:
             return None, None, None
 
-        node_product = self._number_pairs(y) * len(y)
+        node_pairs = self._number_pairs(y)
+        node_product = node_pairs * y.size
+        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # variables for the 2-step partition
         a_min_balanced = None  # attribute that minimizes cost and satisfies cost <= 2/3 * node_product
@@ -145,10 +145,11 @@ class Algo(DefaultClassifier):
         t_min = None  # t* - threshold relative to previous attribute
         cost_min = math.inf
         all_thresholds = []
+
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_balanced, cost_a_balanced, threshold_a_min, cost_a_min, thresholds_a =\
-                self._get_best_threshold(X, y, a)
+            threshold_a_balanced, cost_a_balanced, threshold_a_min, cost_a_min, thresholds_a = \
+                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
             all_thresholds.append(thresholds_a)
             if cost_a_min < cost_min:
                 a_min = a
