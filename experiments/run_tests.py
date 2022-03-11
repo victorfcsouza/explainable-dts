@@ -149,34 +149,57 @@ def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
 
 if __name__ == "__main__":
     datasets = [
-        # name, path, bin, col_class_name, categorical_cols, cols_to_delete
-        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
+        # name, path, discrete, col_class_name, categorical_cols, cols_to_delete
+        # ['anuran', '../data/anuran/anuran_formatted.csv', False, 'Family', [], ['Genus', 'Species', 'RecordID']],
 
-        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
-         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
+        # ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', False, 'Risk', [], []],
 
-        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
-         'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
+        # ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
 
-        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+        # ['banknote', '../data/banknote/data_banknote_authentication.csv', False, 'class', [], []],
 
-        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
+        ['bankruptcy_polish', '../data/bankruptcy_polish/3year.csv', False, 'class', [], []],
 
-        # deu erro max_depth 8
-        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+        # ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
+        #
 
-        # deu erro
-        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class', ['Node', 'NodeStatus'],
-         ['id']],
+        # ['collins', "../data/collins/collins_formatted.csv", False, 'Corp.Genre', [],
+        #  ["Text", "Genre", "Counter", "Corpus"]],
 
-        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
-         [], ['Date', 'Time']],
+        # ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
+        #  'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
+        #
+        # ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+        #
+        # ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
+        #
 
-        # Should also include 'TrafficType' for categorial col, but has many values
-        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
-         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+        # ['htru2', '../data/HTRU2/HTRU_2.csv', False, 'class', [], []],
 
-        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
+        # ['iris', '../data/iris/iris.csv', False, 'class', [], []],
+
+        # # deu erro max_depth 8
+        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+        #
+        # ['mice', '../data/mice/mice_formatted.csv', False, 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
+
+        # # deu erro
+        # ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class',
+        # ['Node', 'NodeStatus'], #  ['id']],
+        #
+        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+        #  [], ['Date', 'Time']],
+        #
+        # # Should also include 'TrafficType' for categorial col, but has many values
+        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+        #  False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+        #
+        # ['poker_hand', "../data/poker_hand/poker_hand.csv", False, 'class', [], []]
+
+        # ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
+
+        # ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", False, 'class', [], []]
 
     ]
 
@@ -204,15 +227,18 @@ if __name__ == "__main__":
     for ds in all_datasets:
         for depth in depths:
             for min_samples_stop in min_samples_list:
+                # name, path, discrete, col_class_name, categorical_cols, cols_to_delete
                 # test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
                 #              min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
                 test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94,
-                                                                         0.95, 0.96, 0.97, 0.98, 0.99, 1],
+                             min_samples_stop=min_samples_stop, factors=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+                                                                         0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97,
+                                                                         0.98, 0.99, 1],
                              results_folder="results/cart")
                 test3 = Test(AlgoWithGini, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94,
-                                                                         0.95, 0.96, 0.97, 0.98, 0.99, 1],
+                             min_samples_stop=min_samples_stop, factors=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+                                                                         0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97,
+                                                                         0.98, 0.99, 1],
                              results_folder="results/algo_gini")
                 # test4 = Test(CartPairs, ds[0], ds[1], depth, ds[2], ds[3],
                 #              min_samples_stop=min_samples_stop, factors=[1],
@@ -222,10 +248,10 @@ if __name__ == "__main__":
                 test3.run()
                 # test4.run()
 
-    # generate_consolidates_csv("results/algo/consolidated/algo_experiments.csv", "results/algo")
-    # generate_consolidates_csv("results/cart/consolidated/cart_experiments.csv", "results/cart")
-    # generate_consolidates_csv("results/algo_gini/consolidated/algo_gini_experiments.csv", "results/algo_gini")
-    generate_consolidates_csv("results/cart_pairs/consolidated/cart_pairs_experiments.csv", "results/cart_pairs")
+    # generate_consolidates_csv("results/consolidated/algo_experiments.csv", "results/algo")
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart")
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini")
+    # generate_consolidates_csv("results/consolidated/cart_pairs_experiments.csv", "results/cart_pairs")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
