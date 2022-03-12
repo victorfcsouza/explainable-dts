@@ -1,4 +1,5 @@
 """Implementation of the CART algorithm to train decision tree classifiers."""
+import math
 import numpy as np
 
 from algorithms.default_algorithm import DefaultClassifier
@@ -34,7 +35,10 @@ class Cart(DefaultClassifier):
         num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent)
+        # best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent) # Cart original
+        # In this case, this algorithm has the same criterion as the our Algo, i.e, split node
+        # even the child's weighted Gini is equal to father
+        best_gini = math.inf
 
         best_idx, best_thr = None, None
 

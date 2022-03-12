@@ -150,56 +150,56 @@ def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
 if __name__ == "__main__":
     datasets = [
         # name, path, discrete, col_class_name, categorical_cols, cols_to_delete
-        # ['anuran', '../data/anuran/anuran_formatted.csv', False, 'Family', [], ['Genus', 'Species', 'RecordID']],
+        ['anuran', '../data/anuran/anuran_formatted.csv', False, 'Family', [], ['Genus', 'Species', 'RecordID']],
 
-        # ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', False, 'Risk', [], []],
+        ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', False, 'Risk', [], []],
 
-        # ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
+        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
 
-        # ['banknote', '../data/banknote/data_banknote_authentication.csv', False, 'class', [], []],
+        ['banknote', '../data/banknote/data_banknote_authentication.csv', False, 'class', [], []],
 
         ['bankruptcy_polish', '../data/bankruptcy_polish/3year.csv', False, 'class', [], []],
 
-        # ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
-        #  ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
-        #
+        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+         ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
 
-        # ['collins', "../data/collins/collins_formatted.csv", False, 'Corp.Genre', [],
-        #  ["Text", "Genre", "Counter", "Corpus"]],
 
-        # ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
-        #  'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
-        #
-        # ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
-        #
-        # ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
-        #
+        ['collins', "../data/collins/collins_formatted.csv", False, 'Corp.Genre', [],
+         ["Text", "Genre", "Counter", "Corpus"]],
 
-        # ['htru2', '../data/HTRU2/HTRU_2.csv', False, 'class', [], []],
+        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
+         'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
 
-        # ['iris', '../data/iris/iris.csv', False, 'class', [], []],
+        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
 
-        # # deu erro max_depth 8
-        # ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
-        #
-        # ['mice', '../data/mice/mice_formatted.csv', False, 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
+        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
 
-        # # deu erro
-        # ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class',
-        # ['Node', 'NodeStatus'], #  ['id']],
-        #
-        # ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
-        #  [], ['Date', 'Time']],
-        #
-        # # Should also include 'TrafficType' for categorial col, but has many values
-        # ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
-        #  False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
-        #
-        # ['poker_hand', "../data/poker_hand/poker_hand.csv", False, 'class', [], []]
 
-        # ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []]
+        ['htru2', '../data/HTRU2/HTRU_2.csv', False, 'class', [], []],
 
-        # ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", False, 'class', [], []]
+        ['iris', '../data/iris/iris.csv', False, 'class', [], []],
+
+        # deu erro max_depth 8
+        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+
+        ['mice', '../data/mice/mice_formatted.csv', False, 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
+
+        # deu erro
+        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class',
+         ['Node', 'NodeStatus'],  ['id']],
+
+        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+         [], ['Date', 'Time']],
+
+        # Should also include 'TrafficType' for categorial col, but has many values
+        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+
+        ['poker_hand', "../data/poker_hand/poker_hand.csv", False, 'class', [], []],
+
+        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []],
+
+        ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", False, 'class', [], []]
 
     ]
 
