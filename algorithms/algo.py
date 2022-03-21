@@ -72,18 +72,49 @@ class Algo(DefaultClassifier):
 
         return t_best, min_cost, thresholds
 
+    def _get_attr_cost(self, thresholds, classes_thr):
+        """
+            Get cost of relative to a attribute.
+
+            Thresholds are the possible values that the attribute can hold. Classes_thr are the classes related do each
+            threshold.
+            Each value in threshold corresponds to a example.
+            Assume that thresholds are sorted in increasing order
+        """
+        max_cost = 0
+        i = 1
+        n = len(thresholds)
+        while i <= n:
+            y = []
+            while i < n and thresholds[i] == thresholds[i - 1]:
+                y.append(classes_thr[i - 1])
+                i += 1
+            y.append(classes_thr[i - 1])
+            cost = self._number_pairs(y) * len(y)
+            if cost > max_cost:
+                max_cost = cost
+            i += 1
+
+        return max_cost
+
     def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
+        gamma_factor = 2 / 3
         m = y.size
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
         pairs_right = node_pairs
-        cost_min = math.inf
         cost_best_balanced = math.inf
-        t_min = None
         t_best_balanced = None
         all_thresholds = []
+
+        # For the 2 case split
+        cost_star = self._get_attr_cost(thresholds, classes_thr)
+        # Threshold that characterizes the smallest threshold of a binary split such that the left part has larger
+        # pair-by-weight product thant node_product
+        t_star = None
+
         for i in range(1, m):
             node_class = classes_thr[i - 1]
             classes_left[node_class] += 1
@@ -97,13 +128,12 @@ class Algo(DefaultClassifier):
             prod_left = i * pairs_left
             prod_right = (m - i) * pairs_right
             cost = max(prod_left, prod_right)
-            if cost < cost_min:
-                cost_min = cost
-                t_min = threshold
-            if cost <= (2 / 3) * node_product and cost < cost_best_balanced:
+            if t_star is None and prod_left > gamma_factor * node_product:
+                t_star = threshold
+            if cost <= gamma_factor * node_product and cost < cost_best_balanced:
                 cost_best_balanced = cost
                 t_best_balanced = threshold
-        return t_best_balanced, cost_best_balanced, t_min, cost_min, all_thresholds
+        return t_best_balanced, cost_best_balanced, t_star, cost_star, all_thresholds
 
     def _cost(self, X, y, a, t):
         """
@@ -141,20 +171,20 @@ class Algo(DefaultClassifier):
         cost_min_balanced = node_product
 
         # variables for the 3-step partition
-        a_min = None  # a* - attribute that minimizes cost
-        t_min = None  # t* - threshold relative to previous attribute
-        cost_min = math.inf
+        a_star = None
+        t_star = None  # t* - threshold relative to previous attribute
+        cost_attr_min = math.inf
         all_thresholds = []
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_balanced, cost_a_balanced, threshold_a_min, cost_a_min, thresholds_a = \
+            threshold_a_balanced, cost_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
                 self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
             all_thresholds.append(thresholds_a)
-            if cost_a_min < cost_min:
-                a_min = a
-                t_min = threshold_a_min
-                cost_min = cost_a_min
+            if cost_a_star < cost_attr_min:
+                a_star = a
+                t_star = threshold_a_star
+                cost_attr_min = cost_a_star
             if cost_a_balanced < cost_min_balanced:
                 a_min_balanced = a
                 t_min_balanced = threshold_a_balanced
@@ -163,20 +193,15 @@ class Algo(DefaultClassifier):
         if a_min_balanced is not None:
             return a_min_balanced, t_min_balanced, None
 
-        # Else, Perform a 3-step partition
-        if t_min is not None:
-            X_left, y_left = self._set_objects(X, y, a_min, 'leq', t_min)
-            X_right, y_right = self._set_objects(X, y, a_min, 'gt', t_min)
-            thresholds = all_thresholds[a_min]
-            t_index = thresholds.index(t_min)
+        # Else, Perform a 2-step partition
+        if t_star is not None:
+            thresholds = all_thresholds[a_star]
+            t_index = thresholds.index(t_star)
 
-            # TODO: Here we can reutilize these calculation from cost functions and run faster
-            if self._number_pairs(y_left) * len(y_left) > (2 / 3) * node_product and t_index > 0:
-                return a_min, t_min, thresholds[t_index - 1]
-            elif self._number_pairs(y_right) * len(y_right) > (2 / 3) * node_product and t_index < len(thresholds) - 1:
-                return a_min, t_min, thresholds[t_index + 1]
+            if t_index > 0:
+                return a_star, t_star, thresholds[t_index - 1]
             else:
-                return a_min, t_min, None
+                return a_star, t_star, None
         else:
             return None, None, None
 
@@ -214,7 +239,7 @@ class Algo(DefaultClassifier):
                 node.threshold = thr
                 node.feature_index_occurrences[idx] += 1
 
-                # 2-split
+                # case 1
                 if next_thr is None:
                     node.left = self._grow_tree(X_left, y_left, depth + 1,
                                                 feature_index_occurrences=node.feature_index_occurrences.copy(),
@@ -222,14 +247,14 @@ class Algo(DefaultClassifier):
                     node.right = self._grow_tree(X_right, y_right, depth + 1,
                                                  feature_index_occurrences=node.feature_index_occurrences.copy(),
                                                  modified_factor=modified_factor, calculate_gini=calculate_gini)
-                # 3-split on the left
-                elif next_thr < thr:
+                # case 2
+                else:
                     child_features = node.feature_index_occurrences.copy()
                     child_features[idx] += 1
                     left_node = self._create_node(y_left, feature_index=idx, threshold=next_thr,
                                                   feature_index_occurrences=child_features,
                                                   calculate_gini=calculate_gini)
-                    indices_left = X_left[:, idx] <= thr
+                    indices_left = X_left[:, idx] <= next_thr
                     X_left_left, y_left_left = X_left[indices_left], y_left[indices_left]
                     X_left_right, y_left_right = X_left[~indices_left], y_left[~indices_left]
                     node.left = left_node
@@ -245,32 +270,6 @@ class Algo(DefaultClassifier):
                     node.right = self._grow_tree(X_right, y_right, depth + 1,
                                                  feature_index_occurrences=node.feature_index_occurrences.copy(),
                                                  modified_factor=modified_factor, calculate_gini=calculate_gini)
-
-                # 3-split on the right
-                elif next_thr > thr:
-                    child_features = node.feature_index_occurrences.copy()
-                    child_features[idx] += 1
-                    right_node = self._create_node(y_right, feature_index=idx, threshold=next_thr,
-                                                   feature_index_occurrences=child_features,
-                                                   calculate_gini=calculate_gini)
-                    indices_right = X_right[:, idx] <= thr
-                    X_right_left, y_right_left = X_right[indices_right], y_right[indices_right]
-                    X_right_right, y_right_right = X_right[~indices_right], y_right[~indices_right]
-                    node.right = right_node
-                    node.left = self._grow_tree(X_left, y_left, depth + 1,
-                                                feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                                modified_factor=modified_factor, calculate_gini=calculate_gini)
-                    if depth + 1 < self.max_depth and right_node.num_samples >= self.min_samples_stop:
-                        right_node.left = \
-                            self._grow_tree(X_right_left, y_right_left, depth + 2,
-                                            feature_index_occurrences=right_node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
-                        right_node.right = \
-                            self._grow_tree(X_right_right, y_right_right, depth + 2,
-                                            feature_index_occurrences=right_node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
-                else:
-                    raise ValueError("Threshold not permitted!")
         return node
 
     def fit(self, X, y, modified_factor=1):
