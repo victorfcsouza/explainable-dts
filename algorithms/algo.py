@@ -154,12 +154,14 @@ class Algo(DefaultClassifier):
         Returns:
             best_idx: Index of the feature for best split, or None if no split is found.
             best_thr: Threshold to use for the split, or None if no split is found.
-            next_thr: If 3-split is necessary, returns the
+            next_thr: If 2-split is necessary, returns the next_threshold to apply the split
+            balanced: Whether the split is balanced in terms of cost (product of pairs and weight).
+                      In this case, 2-split is required
         """
         # Need at least two elements to split a node.
         m = y.size
         if m <= 1:
-            return None, None, None
+            return None, None, None, None
 
         node_pairs = self._number_pairs(y)
         node_product = node_pairs * y.size
@@ -191,21 +193,21 @@ class Algo(DefaultClassifier):
                 cost_min_balanced = cost_a_balanced
 
         if a_min_balanced is not None:
-            return a_min_balanced, t_min_balanced, None
+            return a_min_balanced, t_min_balanced, None, True
 
         # Else, Perform a 2-step partition
         if t_star is not None:
             thresholds = all_thresholds[a_star]
             t_index = thresholds.index(t_star)
-
             if t_index > 0:
-                return a_star, t_star, thresholds[t_index - 1]
+                return a_star, t_star, thresholds[t_index - 1], False
             else:
-                return a_star, t_star, None
+                return a_star, t_star, None, False
         else:
-            return None, None, None
+            return None, None, None, None
 
-    def _create_node(self, y, feature_index=None, threshold=None, feature_index_occurrences=None, calculate_gini=True):
+    def _create_node(self, y, feature_index=None, threshold=None, feature_index_occurrences=None, calculate_gini=True,
+                     balanced_split=None):
         num_samples_per_class = [np.sum(y == i) for i in range(self.n_classes_)]
         predicted_class = np.argmax(num_samples_per_class)
         node = tree.Node(
@@ -214,7 +216,8 @@ class Algo(DefaultClassifier):
             predicted_class=predicted_class,
             feature_index=feature_index,
             threshold=threshold,
-            feature_index_occurrences=feature_index_occurrences.copy()
+            feature_index_occurrences=feature_index_occurrences.copy(),
+            balanced_split=balanced_split
         )
         if calculate_gini:
             node.gini = self._gini(y)
@@ -229,8 +232,9 @@ class Algo(DefaultClassifier):
 
         # Split recursively until maximum depth is reached.
         if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
-            idx, thr, next_thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
-                                                  modified_factor=modified_factor)
+            idx, thr, next_thr, balanced_split =\
+                self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
+                                 modified_factor=modified_factor)
             if idx is not None:
                 indices_left = X[:, idx] <= thr
                 X_left, y_left = X[indices_left], y[indices_left]
@@ -238,6 +242,7 @@ class Algo(DefaultClassifier):
                 node.feature_index = idx
                 node.threshold = thr
                 node.feature_index_occurrences[idx] += 1
+                node.balanced_split = balanced_split
 
                 # case 1
                 if next_thr is None:
@@ -253,7 +258,7 @@ class Algo(DefaultClassifier):
                     child_features[idx] += 1
                     left_node = self._create_node(y_left, feature_index=idx, threshold=next_thr,
                                                   feature_index_occurrences=child_features,
-                                                  calculate_gini=calculate_gini)
+                                                  calculate_gini=calculate_gini, balanced_split=False)
                     indices_left = X_left[:, idx] <= next_thr
                     X_left_left, y_left_left = X_left[indices_left], y_left[indices_left]
                     X_left_right, y_left_right = X_left[~indices_left], y_left[~indices_left]

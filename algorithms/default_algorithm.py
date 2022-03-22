@@ -63,6 +63,9 @@ class DefaultClassifier:
         # Returns max_depth, max_depth_redundant, wapl, wapl_redundant
         return self.tree_.get_explainability_metrics(self.n_features_)
 
+    def get_unbalanced_splits(self):
+        return self.tree_.get_unbalanced_splits()
+
     def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
         raise NotImplementedError()
 

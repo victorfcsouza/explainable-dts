@@ -16,10 +16,12 @@ class MetricType(Enum):
     max_depth_redundant = "max_depth_redundant"
     wapl = "wapl"
     wapl_redundant = "wapl_redundant"
+    unbalanced_splits = "unbalanced_splits"
 
 
 class Metrics:
-    def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wapl, wapl_redundant):
+    def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wapl, wapl_redundant,
+                 unbalanced_splits):
         self.factor = factor
         self.train_accuracy = train_accuracy
         self.test_accuracy = test_accuracy
@@ -27,6 +29,7 @@ class Metrics:
         self.max_depth_redundant = max_depth_redundant
         self.wapl = wapl
         self.wapl_redundant = wapl_redundant
+        self.unbalanced_splits = unbalanced_splits
 
     def get_metrics(self):
         return {
@@ -36,7 +39,8 @@ class Metrics:
             MetricType.max_depth: self.max_depth,
             MetricType.max_depth_redundant: self.max_depth_redundant,
             MetricType.wapl: self.wapl,
-            MetricType.wapl_redundant: self.wapl_redundant
+            MetricType.wapl_redundant: self.wapl_redundant,
+            MetricType.unbalanced_splits: self.unbalanced_splits
         }
 
 
@@ -55,10 +59,10 @@ class Test:
         self.discrete = discrete
         self.results_folder = results_folder
         self.factors = factors
-        self.n_classes = None
-        self.n_samples = None
-        self.n_features = None
-        self.results = None  # Need to update via test_dataset
+        self.n_classes = None  # Need to update via run()
+        self.n_samples = None  # Need to update via run()
+        self.n_features = None  # Need to update via run()
+        self.results = None  # Need to update via run()
 
     def _get_filename(self, extension: str) -> str:
         filename = f"{self.results_folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
@@ -184,6 +188,7 @@ class Test:
 
             print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
             max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
+            unbalanced_splits = dt.get_unbalanced_splits()
             if debug:
                 dt.tree_.debug(
                     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
@@ -199,7 +204,8 @@ class Test:
                 MetricType.max_depth: round(max_depth, 3),
                 MetricType.max_depth_redundant: round(max_depth_redundant, 3),
                 MetricType.wapl: round(wapl, 3),
-                MetricType.wapl_redundant: round(wapl_redundant, 3)
+                MetricType.wapl_redundant: round(wapl_redundant, 3),
+                MetricType.unbalanced_splits: unbalanced_splits
             })
 
         self.results = results

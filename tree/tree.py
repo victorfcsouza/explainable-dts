@@ -5,7 +5,7 @@ class Node:
     """A decision tree node."""
 
     def __init__(self, num_samples, num_samples_per_class, predicted_class, gini=0, feature_index=None, threshold=None,
-                 feature_index_occurrences=None):
+                 feature_index_occurrences=None, balanced_split=None):
         self.num_samples = num_samples
         self.num_samples_per_class = num_samples_per_class
         self.predicted_class = predicted_class
@@ -20,6 +20,10 @@ class Node:
         self.feature_index_occurrences_redundant = None
 
         self.threshold = threshold
+
+        # Whether the node split is balanced in terms of cost (product of pairs and weight)
+        self.balanced_split = balanced_split
+
         self.left = None
         self.right = None
 
@@ -81,6 +85,7 @@ class Node:
                 "feature_occurrences = {}".format(self.feature_index_occurrences),
                 "feat_redund_occurr = {}".format(self.feature_index_occurrences_redundant),
                 "gini = {:.2f}".format(self.gini),
+                "balanced_split = {}".format(self.balanced_split),
                 "samples = {}".format(self.num_samples),
                 str(self.num_samples_per_class),
             ]
@@ -181,3 +186,19 @@ class Node:
         wapl_redundant = wapl_redundant_sum / total_samples
 
         return max_depth, max_redundant_depth, wapl, wapl_redundant
+
+    def get_unbalanced_splits(self):
+        unbalanced_splits = [0]
+
+        # Recursive function
+        def visit_node(node: Node):
+            left_node: Node = node.left
+            right_node: Node = node.right
+            unbalanced_splits[0] += 1 if node.balanced_split is False else 0
+            if left_node:
+                visit_node(left_node)
+            if right_node:
+                visit_node(right_node)
+
+        visit_node(self)
+        return unbalanced_splits[0]

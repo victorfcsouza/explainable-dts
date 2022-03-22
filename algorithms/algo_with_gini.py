@@ -60,12 +60,14 @@ class AlgoWithGini(Algo):
         Returns:
             best_idx: Index of the feature for best split, or None if no split is found.
             best_thr: Threshold to use for the split, or None if no split is found.
-            next_thr: If 3-split is necessary, returns the
+            next_thr: If 2-split is necessary, returns the
+            balanced: Whether the split is balanced in terms of cost (product of pairs and weight).
+                      In this case, 2-split is required
         """
         # Need at least two elements to split a node.
         m = y.size
         if m <= 1:
-            return None, None, None
+            return None, None, None, None
 
         node_pairs = self._number_pairs(y)
         node_product = node_pairs * y.size
@@ -99,15 +101,15 @@ class AlgoWithGini(Algo):
                 min_gini = modified_gini_a
 
         if a_min_gini is not None:
-            return a_min_gini, t_min_gini, None
+            return a_min_gini, t_min_gini, None, True
 
         # Else, Perform a 2-step partition
         if t_star is not None:
             thresholds = all_thresholds[a_star]
             t_index = thresholds.index(t_star)
             if t_index > 0:
-                return a_star, t_star, thresholds[t_index - 1]
+                return a_star, t_star, thresholds[t_index - 1], False
             else:
-                return a_star, t_star, None
+                return a_star, t_star, None, False
         else:
-            return None, None, None
+            return None, None, None, None
