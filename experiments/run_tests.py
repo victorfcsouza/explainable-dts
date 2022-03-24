@@ -104,8 +104,8 @@ def generate_consolidates_csv(csv_file, result_dir):
     json_files = [f for f in files if 'json' in f]
 
     header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'algorithm', 'max_depth_stop', 'min_samples_stop',
-              'discrete', 'factor', 'train_accuracy', 'test_accuracy', 'max_depth', 'max_depth_redundant', 'wapl',
-              'wapl_redundant']
+              'discrete', 'factor', 'unbalanced_splits', 'train_accuracy', 'test_accuracy', 'max_depth',
+              'max_depth_redundant', 'wapl', 'wapl_redundant']
     rows = []
     for file in json_files:
         with open(result_dir + "/" + file) as json_file:
