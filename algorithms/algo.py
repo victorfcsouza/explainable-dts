@@ -133,6 +133,8 @@ class Algo(DefaultClassifier):
             if cost <= gamma_factor * node_product and cost < cost_best_balanced:
                 cost_best_balanced = cost
                 t_best_balanced = threshold
+
+        cost_star = math.inf if t_star is None else cost_star
         return t_best_balanced, cost_best_balanced, t_star, cost_star, all_thresholds
 
     def _cost(self, X, y, a, t):
@@ -169,7 +171,7 @@ class Algo(DefaultClassifier):
 
         # variables for the 2-step partition
         a_min_balanced = None  # attribute that minimizes cost and satisfies cost <= 2/3 * node_product
-        t_min_balanced = None  # attribute relative to previous attribute
+        t_min_balanced = None  # threshold relative to previous attribute
         cost_min_balanced = node_product
 
         # variables for the 3-step partition

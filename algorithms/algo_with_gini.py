@@ -52,6 +52,8 @@ class AlgoWithGini(Algo):
             if gini < best_gini and cost <= gamma_factor * node_product:
                 best_gini = gini
                 t_best_gini = threshold
+
+        cost_star = math.inf if t_star is None else cost_star
         return t_best_gini, best_gini, t_star, cost_star, all_thresholds
 
     def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
@@ -75,7 +77,7 @@ class AlgoWithGini(Algo):
 
         # variables for the 2-step partition
         a_min_gini = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
-        t_min_gini = None  # attribute relative to previous attribute
+        t_min_gini = None  # threshold relative to previous attribute
         min_gini = math.inf
 
         # variables for the 3-step partition
