@@ -64,9 +64,12 @@ class Test:
         self.n_features = None  # Need to update via run()
         self.results = None  # Need to update via run()
 
-    def _get_filename(self, extension: str) -> str:
+    def _get_filename(self, extension: str, factor: float = None) -> str:
         filename = f"{self.results_folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}_discrete_{self.discrete}." + extension
+                   f"_samples_{self.min_samples_stop}_discrete_{self.discrete}"
+        if factor:
+            filename += f"_factor_{factor}"
+        filename += f".{extension}"
         return filename
 
     def _plot_graphic(self):
@@ -195,6 +198,8 @@ class Test:
                     class_names=["Class {}".format(i) for i in range(len(y_train))],
                     show_details=True
                 )
+                tree_img_file = self._get_filename(extension="png", factor=factor)
+                dt.tree_.debug_pydot(tree_img_file)
             print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl}, "
                   f"wapl_redundant: {wapl_redundant}")
             results.append({

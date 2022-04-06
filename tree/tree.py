@@ -1,4 +1,6 @@
 """Binary tree with decision tree semantics and ASCII visualization."""
+from pathlib import Path
+import pydot
 
 
 class Node:
@@ -12,6 +14,8 @@ class Node:
         self.gini = gini
         self.feature_index = feature_index
         self.feature_index_occurrences = feature_index_occurrences  # number of occurrences for each feature
+
+        self.is_redundant = None  # True if is a redundant node
 
         # for each feature, +1 if feature x_i appears in x_i > j,
         # -1 if x_i appears in x_i <= j, and
@@ -129,6 +133,53 @@ class Node:
         if not root:
             lines[0] = lines[0][:middle] + "┴" + lines[0][middle + 1:]
         return lines, n + m + width, max(p, q) + 2 + len(top_lines), middle
+
+    def debug_pydot(self, output_file: str):
+        pydot_graph = pydot.Dot("tree", graph_type="digraph")
+
+        def get_node_name(node: Node):
+            return f"{node.get_node_depth()}.{node.num_samples}.{node.feature_index}.{node.threshold}." \
+                   f"{node.feature_index_occurrences}.{node.feature_index_occurrences_redundant}"
+
+        def get_node_label(node: Node):
+            return f"D{node.feature_index} <= {round(node.threshold, 3)}" if node.left or node.right else \
+                str(node.num_samples)
+
+        def get_fill_color(node: Node):
+            return "none" if node.left or node.right else "gold"
+
+        def visit_node(pydot_tree: pydot.Dot, node: Node, parent_node_name: str = "none"):
+            node_name = get_node_name(node)
+
+            if parent_node_name != "none":
+                pydot_tree.add_edge(pydot.Edge(parent_node_name, node_name))
+
+            if node.left:
+                node_left_name = get_node_name(node.left)
+                pydot_left_node = pydot.Node(node_left_name, label=get_node_label(node.left), shape="box",
+                                             fillcolor=get_fill_color(node.left), style="filled")
+                pydot_tree.add_node(pydot_left_node)
+                visit_node(pydot_tree, node.left, node_name)
+            if node.right:
+                node_right_name = get_node_name(node.right)
+                pydot_right_node = pydot.Node(node_right_name, label=get_node_label(node.right), shape="box",
+                                              fillcolor=get_fill_color(node.right), style="filled")
+                pydot_tree.add_node(pydot_right_node)
+                visit_node(pydot_tree, node.right, node_name)
+
+        # Call recursive function
+        root_name = get_node_name(self)
+        root_label = get_node_label(self)
+        pydot_root_node = pydot.Node(root_name, label=root_label, shape="box")
+        pydot_graph.add_node(pydot_root_node)
+        visit_node(pydot_graph, self)
+
+        # Save Results
+        # Create dir if not exists
+        dir_index = output_file.rfind("/")
+        dir_name = output_file[:dir_index]
+        Path(dir_name).mkdir(parents=True, exist_ok=True)
+        pydot_graph.write_png(output_file)
 
     def get_explainability_metrics(self, num_features):
         wapl_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)

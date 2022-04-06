@@ -3,6 +3,11 @@
 
 # Requirements
 - Python 3.8 or above
+- GraphViz:
+```bash
+$ sudo apt  install graphviz
+```
+
 
 # Instalation
 ```bash
