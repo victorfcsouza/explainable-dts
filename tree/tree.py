@@ -135,7 +135,7 @@ class Node:
         return lines, n + m + width, max(p, q) + 2 + len(top_lines), middle
 
     def debug_pydot(self, output_file: str):
-        pydot_graph = pydot.Dot("tree", graph_type="digraph")
+        pydot_graph = pydot.Dot("tree", graph_type="digraph", dpi=300)
 
         def get_node_name(node: Node):
             return f"{node.get_node_depth()}.{node.num_samples}.{node.feature_index}.{node.threshold}." \
@@ -143,7 +143,7 @@ class Node:
 
         def get_node_label(node: Node):
             return f"D{node.feature_index} <= {round(node.threshold, 3)}" if node.left or node.right else \
-                str(node.num_samples)
+                f"Samples: {node.num_samples}" + r"\n" + f"Class: {node.predicted_class}"
 
         def get_fill_color(node: Node):
             return "none" if node.left or node.right else "gold"
