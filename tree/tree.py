@@ -1,6 +1,8 @@
 """Binary tree with decision tree semantics and ASCII visualization."""
+import dot2tex as d2t
 from pathlib import Path
 import pydot
+import subprocess
 
 
 class Node:
@@ -137,16 +139,21 @@ class Node:
     def debug_pydot(self, output_file: str):
         pydot_graph = pydot.Dot("tree", graph_type="digraph", dpi=300)
 
-        def get_node_name(node: Node):
+        def get_node_name(node):
             return f"{node.get_node_depth()}.{node.num_samples}.{node.feature_index}.{node.threshold}." \
                    f"{node.feature_index_occurrences}.{node.feature_index_occurrences_redundant}"
 
-        def get_node_label(node: Node):
-            return f"D{node.feature_index} <= {round(node.threshold, 3)}" if node.left or node.right else \
-                f"Samples: {node.num_samples}" + r"\n" + f"Class: {node.predicted_class}"
+        def get_pydot_node(node):
+            node_name = get_node_name(node)
 
-        def get_fill_color(node: Node):
-            return "none" if node.left or node.right else "gold"
+            fill_color = "none" if node.left or node.right else "gold"
+
+            tex_label = f"$D{node.feature_index} \\leq {round(node.threshold, 3) + 0}$" if node.left or node.right \
+                else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
+                     "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
+
+            return pydot.Node(node_name, shape="box", fillcolor=fill_color, style="filled", texlbl=tex_label,
+                              align="left")
 
         def visit_node(pydot_tree: pydot.Dot, node: Node, parent_node_name: str = "none"):
             node_name = get_node_name(node)
@@ -155,22 +162,16 @@ class Node:
                 pydot_tree.add_edge(pydot.Edge(parent_node_name, node_name))
 
             if node.left:
-                node_left_name = get_node_name(node.left)
-                pydot_left_node = pydot.Node(node_left_name, label=get_node_label(node.left), shape="box",
-                                             fillcolor=get_fill_color(node.left), style="filled")
+                pydot_left_node = get_pydot_node(node.left)
                 pydot_tree.add_node(pydot_left_node)
                 visit_node(pydot_tree, node.left, node_name)
             if node.right:
-                node_right_name = get_node_name(node.right)
-                pydot_right_node = pydot.Node(node_right_name, label=get_node_label(node.right), shape="box",
-                                              fillcolor=get_fill_color(node.right), style="filled")
+                pydot_right_node = get_pydot_node(node.right)
                 pydot_tree.add_node(pydot_right_node)
                 visit_node(pydot_tree, node.right, node_name)
 
         # Call recursive function
-        root_name = get_node_name(self)
-        root_label = get_node_label(self)
-        pydot_root_node = pydot.Node(root_name, label=root_label, shape="box")
+        pydot_root_node = get_pydot_node(self)
         pydot_graph.add_node(pydot_root_node)
         visit_node(pydot_graph, self)
 
@@ -178,8 +179,17 @@ class Node:
         # Create dir if not exists
         dir_index = output_file.rfind("/")
         dir_name = output_file[:dir_index]
+        filename = output_file[dir_index + 1:]
         Path(dir_name).mkdir(parents=True, exist_ok=True)
-        pydot_graph.write_png(output_file)
+        texcode = d2t.dot2tex(pydot_graph.to_string(), crop=True, autosize=True)
+        # pydot_graph.write_png(output_file)
+        output_file_tex = output_file + ".tex"
+        with open(output_file_tex, 'w') as file:
+            file.write(texcode)
+        subprocess.run(["pdflatex", "-interaction=batchmode", "-output-directory", dir_name,
+                        output_file_tex])
+        subprocess.run(["convert", "-density", "300", f"{output_file}.pdf", "-quality", "100",
+                        output_file])
 
     def get_explainability_metrics(self, num_features):
         wapl_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)

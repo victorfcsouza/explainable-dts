@@ -12,6 +12,7 @@ sklearn = "*"
 jupyterlab-vim = "*"
 seaborn = "*"
 pydot = "*"
+dot2tex = "*"
 
 [dev-packages]
 
