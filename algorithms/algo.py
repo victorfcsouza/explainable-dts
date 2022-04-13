@@ -189,7 +189,7 @@ class Algo(DefaultClassifier):
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if cost_a_balanced < cost_min_balanced:
+            if threshold_a_balanced is not None and cost_a_balanced < cost_min_balanced:
                 a_min_balanced = a
                 t_min_balanced = threshold_a_balanced
                 cost_min_balanced = cost_a_balanced

@@ -75,10 +75,13 @@ class AlgoWithGini(Algo):
         node_product = node_pairs * y.size
         classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
 
+        # Gini of current node.
+        num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
+        best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent)
+
         # variables for the 2-step partition
         a_min_gini = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
         t_min_gini = None  # threshold relative to previous attribute
-        min_gini = math.inf
 
         # variables for the 3-step partition
         a_star = None
@@ -97,10 +100,10 @@ class AlgoWithGini(Algo):
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if modified_gini_a < min_gini:
+            if modified_gini_a < best_gini:
                 a_min_gini = a
                 t_min_gini = threshold_a_gini
-                min_gini = modified_gini_a
+                best_gini = modified_gini_a
 
         if a_min_gini is not None:
             return a_min_gini, t_min_gini, None, True
