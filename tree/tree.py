@@ -145,10 +145,12 @@ class Node:
 
         def get_pydot_node(node):
             node_name = get_node_name(node)
-
             fill_color = "none" if node.left or node.right else "gold"
-
-            tex_label = f"$D{node.feature_index} \\leq {round(node.threshold, 3) + 0}$" if node.left or node.right \
+            threshold = str(round(node.threshold, 3) + 0) if node.left or node.right else None
+            # Scientific values for small numbers
+            if node.threshold is not None and abs(node.threshold) < 0.001:
+                threshold = "{:.2e}".format(node.threshold)
+            tex_label = f"$D{node.feature_index} \\leq " + threshold + "$" if node.left or node.right \
                 else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
                      "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
 
@@ -179,7 +181,6 @@ class Node:
         # Create dir if not exists
         dir_index = output_file.rfind("/")
         dir_name = output_file[:dir_index]
-        filename = output_file[dir_index + 1:]
         Path(dir_name).mkdir(parents=True, exist_ok=True)
         texcode = d2t.dot2tex(pydot_graph.to_string(), crop=True, autosize=True)
         # pydot_graph.write_png(output_file)
