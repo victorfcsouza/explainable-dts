@@ -1,8 +1,6 @@
 from experiments.test import MetricType, Test
 from algorithms.cart import Cart
-from algorithms.algo import Algo
 from algorithms.algo_with_gini import AlgoWithGini
-from algorithms.cart_pairs import CartPairs
 
 import csv
 import json
@@ -104,7 +102,7 @@ def generate_consolidates_csv(csv_file, result_dir):
     json_files = [f for f in files if 'json' in f]
 
     header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'algorithm', 'max_depth_stop', 'min_samples_stop',
-              'discrete', 'factor', 'unbalanced_splits', 'train_accuracy', 'test_accuracy', 'max_depth',
+              'factor', 'unbalanced_splits', 'train_accuracy', 'test_accuracy', 'max_depth',
               'max_depth_redundant', 'wapl', 'wapl_redundant']
     rows = []
     for file in json_files:
@@ -112,13 +110,13 @@ def generate_consolidates_csv(csv_file, result_dir):
             file_data = json.load(json_file)
             for result in file_data['results']:
                 row = [file_data['dataset'], file_data['n_samples'], file_data['n_features'], file_data['n_classes'],
-                       file_data['algorithm'], file_data['max_depth_stop'], file_data['min_samples_stop'],
-                       file_data['discrete']]
-                for it in header[8:]:
+                       file_data['algorithm'], file_data['max_depth_stop'], file_data['min_samples_stop']]
+
+                for it in header[7:]:
                     row.append(result[it])
                 rows.append(row)
 
-    rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6], x[7]))
+    rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6]))
     # Create dir if not exists
     dir_index = csv_file.rfind("/")
     dir_name = csv_file[:dir_index]
@@ -149,57 +147,54 @@ def one_hot_encoding(csv_file, categorical_cols=None, cols_to_remove=None):
 
 if __name__ == "__main__":
     datasets = [
-        # name, path, discrete, col_class_name, categorical_cols, cols_to_delete
-        ['anuran', '../data/anuran/anuran_formatted.csv', False, 'Family', [], ['Genus', 'Species', 'RecordID']],
+        # name, path, col_class_name, categorical_cols, cols_to_delete
+        ['anuran', '../data/anuran/anuran_formatted.csv', 'Family', [], ['Genus', 'Species', 'RecordID']],
 
-        ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', False, 'Risk', [], []],
+        ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', 'Risk', [], []],
 
-        ['avila', '../data/avila/avila_formatted.csv', False, 'Class', [], []],
+        ['avila', '../data/avila/avila_formatted.csv', 'Class', [], []],
 
-        ['banknote', '../data/banknote/data_banknote_authentication.csv', False, 'class', [], []],
+        ['banknote', '../data/banknote/data_banknote_authentication.csv', 'class', [], []],
 
-        ['bankruptcy_polish', '../data/bankruptcy_polish/3year.csv', False, 'class', [], []],
+        ['bankruptcy_polish', '../data/bankruptcy_polish/3year.csv', 'class', [], []],
 
-        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', False, 'CLASS', [],
+        ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', 'CLASS', [],
          ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
 
-
-        ['collins', "../data/collins/collins_formatted.csv", False, 'Corp.Genre', [],
+        ['collins', "../data/collins/collins_formatted.csv", 'Corp.Genre', [],
          ["Text", "Genre", "Counter", "Corpus"]],
 
-        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv", False,
+        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv",
          'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
 
-        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", False, 'Class', [], []],
+        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", 'Class', [], []],
 
-        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', False, 'eyeDetection', [], []],
+        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', 'eyeDetection', [], []],
 
+        ['htru2', '../data/HTRU2/HTRU_2.csv', 'class', [], []],
 
-        ['htru2', '../data/HTRU2/HTRU_2.csv', False, 'class', [], []],
-
-        ['iris', '../data/iris/iris.csv', False, 'class', [], []],
+        ['iris', '../data/iris/iris.csv', 'class', [], []],
 
         # deu erro max_depth 8
-        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', False, 'lettr', [], []],
+        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', 'lettr', [], []],
 
-        ['mice', '../data/mice/mice_formatted.csv', False, 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
+        ['mice', '../data/mice/mice_formatted.csv', 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
 
-        # deu erro
-        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', False, 'Class',
-         ['Node', 'NodeStatus'],  ['id']],
+        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', 'Class',
+         ['Node', 'NodeStatus'], ['id']],
 
-        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', False, 'Room_Occupancy_Count',
+        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', 'Room_Occupancy_Count',
          [], ['Date', 'Time']],
 
         # Should also include 'TrafficType' for categorial col, but has many values
         ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
-         False, 'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
+         'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
 
-        ['poker_hand', "../data/poker_hand/poker_hand.csv", False, 'class', [], []],
+        ['poker_hand', "../data/poker_hand/poker_hand.csv", 'class', [], []],
 
-        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", False, 'digit', [], []],
+        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", 'digit', [], []],
 
-        ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", False, 'class', [], []]
+        ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", 'class', [], []]
 
     ]
 
@@ -219,39 +214,26 @@ if __name__ == "__main__":
     #     one_hot_encoding(ds[1], ds[4], ds[5])
 
     all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
-    depths = [6, 7, 8]
-    min_samples_list = [0]
-    # min_samples_list = [0, 30, 100]
+    depths = [6]
+    min_samples_list = [30]
 
     # Run tests
     for ds in all_datasets:
         for depth in depths:
             for min_samples_stop in min_samples_list:
-                # name, path, discrete, col_class_name, categorical_cols, cols_to_delete
-                # test1 = Test(Algo, ds[0], ds[1], depth, ds[2], ds[3],
-                #              min_samples_stop=min_samples_stop, factors=[1], results_folder="results/algo")
-                test2 = Test(Cart, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
-                                                                         0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97,
-                                                                         0.98, 0.99, 1],
+                # algo_name, path, col_class_name, categorical_cols, cols_to_delete
+                # Cols to deleted was already deleted
+                test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
+                             col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                              results_folder="results/cart")
-                test3 = Test(AlgoWithGini, ds[0], ds[1], depth, ds[2], ds[3],
-                             min_samples_stop=min_samples_stop, factors=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
-                                                                         0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97,
-                                                                         0.98, 0.99, 1],
+                test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
+                             col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                              results_folder="results/algo_gini")
-                # test4 = Test(CartPairs, ds[0], ds[1], depth, ds[2], ds[3],
-                #              min_samples_stop=min_samples_stop, factors=[1],
-                #              results_folder="results/cart_pairs")
-                # test1.run()
-                test2.run()
-                test3.run()
-                # test4.run()
+                # test1.run(debug=False)
+                # test2.run(debug=False)
 
-    # generate_consolidates_csv("results/consolidated/algo_experiments.csv", "results/algo")
     generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart")
     generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini")
-    # generate_consolidates_csv("results/consolidated/cart_pairs_experiments.csv", "results/cart_pairs")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

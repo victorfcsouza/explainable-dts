@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import pickle
 from sklearn.model_selection import train_test_split
 
 
@@ -45,7 +46,7 @@ class Metrics:
 
 
 class Test:
-    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int, discrete: bool,
+    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int,
                  col_class_name: str, cols_to_delete: list = None, min_samples_stop: int = 0,
                  factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
                           0.97, 0.98, 0.99, 1), results_folder="results"):
@@ -56,7 +57,6 @@ class Test:
         self.cols_to_delete = cols_to_delete
         self.max_depth_stop = max_depth_stop
         self.min_samples_stop = min_samples_stop
-        self.discrete = discrete
         self.results_folder = results_folder
         self.factors = factors
         self.n_classes = None  # Need to update via run()
@@ -66,7 +66,7 @@ class Test:
 
     def _get_filename(self, extension: str, factor: float = None) -> str:
         filename = f"{self.results_folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}_discrete_{self.discrete}"
+                   f"_samples_{self.min_samples_stop}"
         if factor:
             filename += f"_factor_{factor}"
         filename += f".{extension}"
@@ -83,7 +83,7 @@ class Test:
 
         figure(figsize=(12, 10), dpi=300)
         plt.subplot(2, 1, 1)
-        dataset_name = self.dataset_name if not self.discrete else f"{self.dataset_name} with bin"
+        dataset_name = self.dataset_name
         plt.title(dataset_name, fontsize=16)
         plt.plot(factors, train_accuracy_list, label="Train Accuracy", color='red', marker='o')
         plt.plot(factors, test_accuracy_list, label="Test Accuracy", color='darkred', marker='o')
@@ -101,7 +101,7 @@ class Test:
         filename = self._get_filename("png")
         plt.savefig(filename)
 
-    def _store_results(self):
+    def _store_results(self, trees_by_factor):
         filename: str = self._get_filename("json")
         result_json = {
             'dataset': self.dataset_name,
@@ -109,7 +109,6 @@ class Test:
             'n_samples': self.n_samples,
             'n_features': self.n_features,
             'n_classes': self.n_classes,
-            'discrete': self.discrete,
             'max_depth_stop': self.max_depth_stop,
             'min_samples_stop': self.min_samples_stop,
             # 'opt_factor': self._get_opt_factor(),
@@ -121,6 +120,12 @@ class Test:
         Path(dir_name).mkdir(parents=True, exist_ok=True)
         with open(filename, 'w') as f:
             json.dump(result_json, f, indent=2)
+
+        # Save pickles
+        for factor, tree in trees_by_factor.items():
+            pickle_name = self._get_filename(extension="pickle", factor=factor)
+            with open(pickle_name, 'wb') as handle:
+                pickle.dump(tree, handle)
 
     def _get_opt_factor(self, opt_factor=0.90):
         """
@@ -153,8 +158,7 @@ class Test:
     def run(self, store_results=True, plot_graphic=False, debug=False):
         print("############################")
         print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
-              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop} "
-              f"and discrete = {self.discrete}")
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
 
         # Read CSV
         np.set_printoptions(suppress=True)
@@ -185,6 +189,7 @@ class Test:
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, train_size=0.7)
 
         results = []
+        trees_by_factor = dict()
         for factor in self.factors:
             dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
@@ -212,13 +217,13 @@ class Test:
                 MetricType.wapl_redundant: round(wapl_redundant, 3),
                 MetricType.unbalanced_splits: unbalanced_splits
             })
+            trees_by_factor[factor] = dt.tree_
 
         self.results = results
         if plot_graphic:
             self._plot_graphic()
         if store_results:
-            self._store_results()
+            self._store_results(trees_by_factor)
 
         print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
-              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop} "
-              f"and discrete = {self.discrete}")
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
