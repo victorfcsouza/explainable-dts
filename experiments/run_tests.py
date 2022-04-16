@@ -39,8 +39,8 @@ def plot_opt_table(bins=False):
 
     diff_data = []
     cols = [MetricType.factor.value, MetricType.train_accuracy.value, MetricType.test_accuracy.value,
-            MetricType.max_depth.value, MetricType.max_depth_redundant.value, MetricType.wapl.value,
-            MetricType.wapl_redundant.value]
+            MetricType.max_depth.value, MetricType.max_depth_redundant.value, MetricType.wad.value,
+            MetricType.waes.value]
     rows = []
     for file in json_files:
         with open(f"{RESULTS_FOLDER}/{file}") as json_file:
@@ -54,8 +54,8 @@ def plot_opt_table(bins=False):
             rows.append(file_data['dataset'])
             diff_data.append([opt_dict[col] for col in cols])
 
-    # Sort by wapl_redundant
-    # int(x[1][-1][:-2]) converts wapl_redundant to int without the % symbol
+    # Sort by waes
+    # int(x[1][-1][:-2]) converts waes to int without the % symbol
     rows, diff_data = zip(*sorted(zip(rows, diff_data), key=lambda x: int(x[1][-1][:-1])))
 
     # Plot Table
@@ -103,7 +103,7 @@ def generate_consolidates_csv(csv_file, result_dir):
 
     header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'algorithm', 'max_depth_stop', 'min_samples_stop',
               'factor', 'unbalanced_splits', 'train_accuracy', 'test_accuracy', 'max_depth',
-              'max_depth_redundant', 'wapl', 'wapl_redundant']
+              'max_depth_redundant', 'wad', 'waes']
     rows = []
     for file in json_files:
         with open(result_dir + "/" + file) as json_file:
@@ -229,11 +229,11 @@ if __name__ == "__main__":
                 test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                              results_folder="results/algo_gini")
-                # test1.run(debug=False)
-                # test2.run(debug=False)
+                # test1.run(debug=True)
+                # test2.run(debug=True)
 
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart")
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini")
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json")
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json")
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

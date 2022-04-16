@@ -193,8 +193,8 @@ class Node:
                         output_file])
 
     def get_explainability_metrics(self, num_features):
-        wapl_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)
-        wapl_redundant_by_node = []  # Same as wapl_by_node but discarding redundant features
+        wad_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)
+        waes_by_node = []  # Same as wad_by_node but discarding redundant features
 
         # Recursive function
         def visit_node(node: Node, _feature_index_occurs, _feature_index_redundant_occurs):
@@ -215,8 +215,8 @@ class Node:
                 depth = node.get_node_depth()
                 redundant_depth = node.get_node_explainability()
                 num_samples = node.num_samples
-                wapl_by_node.append((depth, num_samples))
-                wapl_redundant_by_node.append((redundant_depth, num_samples))
+                wad_by_node.append((depth, num_samples))
+                waes_by_node.append((redundant_depth, num_samples))
 
             if left_node:
                 next_index_occurs = node.get_next_feature_occurrences_redundant(node.feature_index, 'left')
@@ -233,21 +233,21 @@ class Node:
         visit_node(self, self.feature_index_occurrences.copy(), self.feature_index_occurrences_redundant.copy())
 
         # Calculate metrics
-        max_depth = max(x[0] for x in wapl_by_node)
-        max_redundant_depth = max(x[0] for x in wapl_redundant_by_node)
+        max_depth = max(x[0] for x in wad_by_node)
+        max_redundant_depth = max(x[0] for x in waes_by_node)
 
-        total_samples = sum(x[1] for x in wapl_by_node)
-        wapl_sum = 0
-        for p in wapl_by_node:
-            wapl_sum += p[0] * p[1]
-        wapl = wapl_sum / total_samples
+        total_samples = sum(x[1] for x in wad_by_node)
+        wad_sum = 0
+        for p in wad_by_node:
+            wad_sum += p[0] * p[1]
+        wad = wad_sum / total_samples
 
-        wapl_redundant_sum = 0
-        for p in wapl_redundant_by_node:
-            wapl_redundant_sum += p[0] * p[1]
-        wapl_redundant = wapl_redundant_sum / total_samples
+        waes_sum = 0
+        for p in waes_by_node:
+            waes_sum += p[0] * p[1]
+        waes = waes_sum / total_samples
 
-        return max_depth, max_redundant_depth, wapl, wapl_redundant
+        return max_depth, max_redundant_depth, wad, waes
 
     def get_unbalanced_splits(self):
         unbalanced_splits = [0]

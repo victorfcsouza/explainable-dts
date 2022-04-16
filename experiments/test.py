@@ -4,9 +4,10 @@ from matplotlib.pyplot import figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import pickle
 from sklearn.model_selection import train_test_split
+
+from utils.file_utils import create_dir
 
 
 class MetricType(Enum):
@@ -15,21 +16,21 @@ class MetricType(Enum):
     test_accuracy = "test_accuracy"
     max_depth = "max_depth"
     max_depth_redundant = "max_depth_redundant"
-    wapl = "wapl"
-    wapl_redundant = "wapl_redundant"
+    wad = "wad"
+    waes = "waes"
     unbalanced_splits = "unbalanced_splits"
 
 
 class Metrics:
-    def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wapl, wapl_redundant,
+    def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wad, waes,
                  unbalanced_splits):
         self.factor = factor
         self.train_accuracy = train_accuracy
         self.test_accuracy = test_accuracy
         self.max_depth = max_depth
         self.max_depth_redundant = max_depth_redundant
-        self.wapl = wapl
-        self.wapl_redundant = wapl_redundant
+        self.wad = wad
+        self.waes = waes
         self.unbalanced_splits = unbalanced_splits
 
     def get_metrics(self):
@@ -39,8 +40,8 @@ class Metrics:
             MetricType.test_accuracy: self.test_accuracy,
             MetricType.max_depth: self.max_depth,
             MetricType.max_depth_redundant: self.max_depth_redundant,
-            MetricType.wapl: self.wapl,
-            MetricType.wapl_redundant: self.wapl_redundant,
+            MetricType.wad: self.wad,
+            MetricType.waes: self.waes,
             MetricType.unbalanced_splits: self.unbalanced_splits
         }
 
@@ -64,8 +65,9 @@ class Test:
         self.n_features = None  # Need to update via run()
         self.results = None  # Need to update via run()
 
-    def _get_filename(self, extension: str, factor: float = None) -> str:
-        filename = f"{self.results_folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
+    def _get_filename(self, extension: str, factor: float = None, sub_folder=None) -> str:
+        folder = f"{self.results_folder}/{sub_folder}" if sub_folder else f"{self.results_folder}"
+        filename = f"{folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
                    f"_samples_{self.min_samples_stop}"
         if factor:
             filename += f"_factor_{factor}"
@@ -78,8 +80,8 @@ class Test:
         test_accuracy_list = [metric[MetricType.test_accuracy] for metric in self.results]
         max_depth_list = [metric[MetricType.max_depth] for metric in self.results]
         max_depth_redundant_list = [metric[MetricType.max_depth_redundant] for metric in self.results]
-        wapl_list = [metric[MetricType.wapl] for metric in self.results]
-        wapl_redundant_list = [metric[MetricType.wapl_redundant] for metric in self.results]
+        wad_list = [metric[MetricType.wad] for metric in self.results]
+        waes_list = [metric[MetricType.waes] for metric in self.results]
 
         figure(figsize=(12, 10), dpi=300)
         plt.subplot(2, 1, 1)
@@ -93,16 +95,16 @@ class Test:
         plt.subplot(2, 1, 2)
         plt.plot(factors, max_depth_list, label="Max Depth", color='cyan', marker='o')
         plt.plot(factors, max_depth_redundant_list, label="Redundant Max Depth", color='blue', marker='o')
-        plt.plot(factors, wapl_list, label="WAPL (Weighted Average Path Length", color='gray', marker='o')
-        plt.plot(factors, wapl_redundant_list, label="Redundant WAPL", color='black', marker='o')
+        plt.plot(factors, wad_list, label="WAD (Weighted Average Depth", color='gray', marker='o')
+        plt.plot(factors, waes_list, label="WAES (Weighted Average Explanation Size)", color='black', marker='o')
         plt.xlabel("Gini Factor", fontsize=16)
         plt.ylabel("Metric", fontsize=16)
         plt.legend(loc="lower right", fontsize=10)
-        filename = self._get_filename("png")
+        filename = self._get_filename("png", sub_folder="img")
         plt.savefig(filename)
 
-    def _store_results(self, trees_by_factor):
-        filename: str = self._get_filename("json")
+    def _store_results(self):
+        filename: str = self._get_filename("json", sub_folder="json")
         result_json = {
             'dataset': self.dataset_name,
             'algorithm': self.classifier.__name__,
@@ -115,17 +117,9 @@ class Test:
             'results': [{key.value: metric[key] for key in metric} for metric in self.results]  # Convert to string keys
         }
         # Create dir if not exists
-        dir_index = filename.rfind("/")
-        dir_name = filename[:dir_index]
-        Path(dir_name).mkdir(parents=True, exist_ok=True)
+        create_dir(filename)
         with open(filename, 'w') as f:
             json.dump(result_json, f, indent=2)
-
-        # Save pickles
-        for factor, tree in trees_by_factor.items():
-            pickle_name = self._get_filename(extension="pickle", factor=factor)
-            with open(pickle_name, 'wb') as handle:
-                pickle.dump(tree, handle)
 
     def _get_opt_factor(self, opt_factor=0.90):
         """
@@ -189,41 +183,46 @@ class Test:
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, train_size=0.7)
 
         results = []
-        trees_by_factor = dict()
         for factor in self.factors:
             dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
-
-            print(f"Train/test accuracy for factor {factor}: {score_train}, {score_test}")
-            max_depth, max_depth_redundant, wapl, wapl_redundant = dt.get_explainability_metrics()
+            max_depth, max_depth_redundant, wad, waes = dt.get_explainability_metrics()
             unbalanced_splits = dt.get_unbalanced_splits()
             if debug:
-                dt.tree_.debug(
-                    feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
-                    class_names=["Class {}".format(i) for i in range(len(y_train))],
-                    show_details=True
-                )
-                tree_img_file = self._get_filename(extension="png", factor=factor)
+                # dt.tree_.debug(
+                #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
+                #     class_names=["Class {}".format(i) for i in range(len(y_train))],
+                #     show_details=True
+                # )
+                tree_img_file = self._get_filename(extension="png", factor=factor, sub_folder="img")
                 dt.tree_.debug_pydot(tree_img_file)
-            print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wapl: {wapl}, "
-                  f"wapl_redundant: {wapl_redundant}")
+            print(f"\nTrain/test accuracy for factor {factor}: {score_train}, {score_test}")
+            print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
+                  f"waes: {waes}")
+            print("----------------------------")
             results.append({
                 MetricType.factor: round(factor, 2),
                 MetricType.train_accuracy: round(score_train, 3),
                 MetricType.test_accuracy: round(score_test, 3),
                 MetricType.max_depth: round(max_depth, 3),
                 MetricType.max_depth_redundant: round(max_depth_redundant, 3),
-                MetricType.wapl: round(wapl, 3),
-                MetricType.wapl_redundant: round(wapl_redundant, 3),
+                MetricType.wad: round(wad, 3),
+                MetricType.waes: round(waes, 3),
                 MetricType.unbalanced_splits: unbalanced_splits
             })
-            trees_by_factor[factor] = dt.tree_
+
+            # Save Tree objects
+            if store_results:
+                pickle_name = self._get_filename(extension="pickle", factor=factor, sub_folder="pickle")
+                create_dir(pickle_name)
+                with open(pickle_name, 'wb') as handle:
+                    pickle.dump(dt.tree_, handle)
 
         self.results = results
         if plot_graphic:
             self._plot_graphic()
         if store_results:
-            self._store_results(trees_by_factor)
+            self._store_results()
 
         print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
               f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")

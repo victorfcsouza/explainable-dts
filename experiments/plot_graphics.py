@@ -27,7 +27,8 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     ax = f.add_subplot(111)
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
-    plt.errorbar(x, average, yerr=err, color="blue")
+    # plt.errorbar(x, average, yerr=err, color="blue")
+    plt.plot(x, average, color="blue")
     plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
     plt.xlabel("Factor")
     plt.ylabel(y_label)
@@ -36,6 +37,9 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
 
 
 if __name__ == "__main__":
-    plot_factor_graphics("results/raw.csv", "results/accuracy_factors.jpg", "test_accuracy", "Test Accuracy")
-    plot_factor_graphics("results/raw.csv", "results/wad_factors.jpg", "wapl", "WAD")
-    plot_factor_graphics("results/raw.csv", "results/waes_factor.jpg", "wapl_redundant", "WAES")
+    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
+                         "test_accuracy", "Test Accuracy")
+    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
+                         "wad", "WAD")
+    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
+                         "waes", "WAES")

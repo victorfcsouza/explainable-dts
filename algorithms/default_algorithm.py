@@ -60,7 +60,7 @@ class DefaultClassifier:
         return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
 
     def get_explainability_metrics(self):
-        # Returns max_depth, max_depth_redundant, wapl, wapl_redundant
+        # Returns max_depth, max_depth_redundant, wad, waes
         return self.tree_.get_explainability_metrics(self.n_features_)
 
     def get_unbalanced_splits(self):
