@@ -17,8 +17,6 @@ class Node:
         self.feature_index = feature_index
         self.feature_index_occurrences = feature_index_occurrences  # number of occurrences for each feature
 
-        self.is_redundant = None  # True if is a redundant node
-
         # for each feature, +1 if feature x_i appears in x_i > j,
         # -1 if x_i appears in x_i <= j, and
         # 2 if x_if appears in both <= j and > j,
@@ -195,21 +193,29 @@ class Node:
     def get_explainability_metrics(self, num_features):
         wad_by_node = []  # Weighted Path by leaf. List of pairs (depth, num_samples)
         waes_by_node = []  # Same as wad_by_node but discarding redundant features
+        nodes_number_metric = [0]
+        features_distinct_metric = [0] * num_features
+        unbalanced_splits = [0]
 
         # Recursive function
-        def visit_node(node: Node, _feature_index_occurs, _feature_index_redundant_occurs):
+        def visit_node(node: Node, _feature_index_occurs, _feature_index_redundant_occurs, nodes_number,
+                       features_distinct, unbal_splits):
 
             # Copy lists from father
             node.feature_index_occurrences = _feature_index_occurs.copy()
             node.feature_index_occurrences_redundant = _feature_index_redundant_occurs.copy()
 
-            # Update feature_index if it is not a leaf
+            # Update metrics
             if node.left is not None and node.right is not None:
                 node.feature_index_occurrences[node.feature_index] += 1
+            nodes_number[0] += 1
+            if (node.left or node.right) and not features_distinct[node.feature_index]:
+                features_distinct[node.feature_index] += 1
+            unbal_splits[0] += 1 if node.balanced_split is False else 0
 
+            # Recurse
             left_node: Node = node.left
             right_node: Node = node.right
-
             if not left_node and not right_node:
                 # leaf
                 depth = node.get_node_depth()
@@ -221,16 +227,19 @@ class Node:
             if left_node:
                 next_index_occurs = node.get_next_feature_occurrences_redundant(node.feature_index, 'left')
                 left_node.feature_index_occurrences_redundant = next_index_occurs
-                visit_node(left_node, node.feature_index_occurrences.copy(), next_index_occurs.copy())
+                visit_node(left_node, node.feature_index_occurrences.copy(), next_index_occurs.copy(),
+                           nodes_number, features_distinct, unbal_splits)
             if right_node:
                 next_index_occurs = node.get_next_feature_occurrences_redundant(node.feature_index, 'right')
                 right_node.feature_index_occurrences_redundant = next_index_occurs
-                visit_node(right_node, node.feature_index_occurrences.copy(), next_index_occurs.copy())
+                visit_node(right_node, node.feature_index_occurrences.copy(), next_index_occurs.copy(),
+                           nodes_number, features_distinct, unbal_splits)
 
         # Call recursive function
         self.feature_index_occurrences = [0] * num_features
         self.feature_index_occurrences_redundant = [0] * num_features
-        visit_node(self, self.feature_index_occurrences.copy(), self.feature_index_occurrences_redundant.copy())
+        visit_node(self, self.feature_index_occurrences.copy(), self.feature_index_occurrences_redundant.copy(),
+                   nodes_number_metric, features_distinct_metric, unbalanced_splits)
 
         # Calculate metrics
         max_depth = max(x[0] for x in wad_by_node)
@@ -241,13 +250,18 @@ class Node:
         for p in wad_by_node:
             wad_sum += p[0] * p[1]
         wad = wad_sum / total_samples
+        wad = round(wad, 3)
 
         waes_sum = 0
         for p in waes_by_node:
             waes_sum += p[0] * p[1]
         waes = waes_sum / total_samples
+        waes = round(waes, 3)
 
-        return max_depth, max_redundant_depth, wad, waes
+        nodes = nodes_number_metric[0]
+        unbalanced = unbalanced_splits[0]
+        distinct_features = sum(features_distinct_metric)
+        return unbalanced, max_depth, max_redundant_depth, wad, waes, nodes, distinct_features
 
     def get_unbalanced_splits(self):
         unbalanced_splits = [0]

@@ -1,7 +1,3 @@
-from experiments.test import MetricType, Test
-from algorithms.cart import Cart
-from algorithms.algo_with_gini import AlgoWithGini
-
 import csv
 import json
 import matplotlib.pyplot as plt
@@ -10,6 +6,12 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 from pathlib import Path
+import pickle
+
+from experiments.test import MetricType, Test
+from algorithms.cart import Cart
+from algorithms.algo_with_gini import AlgoWithGini
+from tree.tree import Node
 
 RESULTS_FOLDER = "results"
 
@@ -17,6 +19,7 @@ RESULTS_FOLDER = "results"
 def change_all_jsons(results_folder):
     files = [f for f in listdir(results_folder) if isfile(join(results_folder, f))]
     json_files = [f for f in files if 'json' in f]
+
     for file in json_files:
         with open(results_folder + "/" + file, "r+") as json_file:
             file_data = json.load(json_file)
@@ -27,7 +30,7 @@ def change_all_jsons(results_folder):
             json_file.seek(0)
             json.dump(file_data, json_file, indent=2, sort_keys=True)
             json_file.truncate()
-            print("Changed file:", file)
+        print("Changed file:", file)
 
 
 def plot_opt_table(bins=False):
@@ -97,24 +100,69 @@ def create_bins(csv_file, bins=10, cols_to_remove=None):
     data.to_csv(outfile, encoding='utf-8', index=None)
 
 
-def generate_consolidates_csv(csv_file, result_dir):
+def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name: dict = None):
     files = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
-    json_files = [f for f in files if 'json' in f]
+    header = ['dataset', 'algorithm', 'max_depth_stop', 'min_samples_stop',
+              'factor', 'train_accuracy', 'test_accuracy', 'unbalanced_splits', 'max_depth',
+              'max_depth_redundant', 'wad', 'waes', 'nodes', 'features']
 
-    header = ['dataset', 'n_samples', 'n_features', 'n_classes', 'algorithm', 'max_depth_stop', 'min_samples_stop',
-              'factor', 'unbalanced_splits', 'train_accuracy', 'test_accuracy', 'max_depth',
-              'max_depth_redundant', 'wad', 'waes']
-    rows = []
-    for file in json_files:
-        with open(result_dir + "/" + file) as json_file:
-            file_data = json.load(json_file)
-            for result in file_data['results']:
-                row = [file_data['dataset'], file_data['n_samples'], file_data['n_features'], file_data['n_classes'],
-                       file_data['algorithm'], file_data['max_depth_stop'], file_data['min_samples_stop']]
+    if load_from == "json":
+        json_files = [f for f in files if 'json' in f]
+        rows = []
+        for file in json_files:
+            with open(result_dir + "/" + file) as json_file:
+                file_data = json.load(json_file)
+                for result in file_data['results']:
+                    row = [file_data['dataset'], file_data['algorithm'], file_data['max_depth_stop'],
+                           file_data['min_samples_stop']]
 
-                for it in header[7:]:
-                    row.append(result[it])
+                    for it in header[5:]:
+                        row.append(result[it])
+                    rows.append(row)
+    # Load from pickles
+    elif load_from == "pickle":
+        print("####################")
+        print("Generating consolidated results:")
+        pickle_files = [f for f in files if 'pickle' in f]
+        pickle_files = sorted(pickle_files)
+        rows = []
+        for pickle_filename in pickle_files:
+            pickle_info = pickle_filename.replace(".pickle", "").split("_")
+            dataset = pickle_info[0]
+            algorithm = pickle_info[1]
+            depth_index = pickle_info.index("depth")
+            max_depth_stop = int(pickle_info[depth_index + 1])
+            min_samples_stop_index = int(pickle_info.index("samples"))
+            min_samples = pickle_info[min_samples_stop_index + 1]
+            factor_index = pickle_info.index("factor")
+            factor = float(pickle_info[factor_index + 1])
+            # Get Train and test accuracy
+            if algorithm == "AlgoWithGini":
+                clf = AlgoWithGini
+            elif algorithm == "Cart":
+                clf = Cart
+            else:
+                raise ValueError("Classifier not found!")
+            print(f"### Generating results for {dataset} with {algorithm}, "
+                  f"max_depth {max_depth_stop}, min_samples_stop {min_samples_stop} and factor {factor}")
+
+            with open(f"{result_dir}/{pickle_filename}", "rb") as f:
+                tree_obj: Node = pickle.load(f)
+                num_features = len(tree_obj.feature_index_occurrences)
+                clf_obj = clf()
+                clf_obj.tree_ = tree_obj
+                test = Test(classifier=clf, dataset_name=dataset, csv_file=ds_by_name[dataset]["csv"],
+                            max_depth_stop=max_depth_stop, col_class_name=ds_by_name[dataset]["col_class"],
+                            min_samples_stop=min_samples_stop)
+                X, y = test.parse_dataset()
+                X_train, X_test, y_train, y_test = test.split_train_test(X, y)
+                score_train, score_test = clf_obj.get_score_without_fit(X_train, y_train, X_test, y_test)
+                metrics = tree_obj.get_explainability_metrics(num_features)
+                row = [dataset, algorithm, max_depth_stop, min_samples, factor, score_train, score_test, *metrics]
                 rows.append(row)
+
+    else:
+        raise ValueError("load_from can be json or pickle")
 
     rows = sorted(rows, key=lambda x: (x[0], x[4], x[5], x[6]))
     # Create dir if not exists
@@ -150,13 +198,13 @@ if __name__ == "__main__":
         # name, path, col_class_name, categorical_cols, cols_to_delete
         ['anuran', '../data/anuran/anuran_formatted.csv', 'Family', [], ['Genus', 'Species', 'RecordID']],
 
-        ['audit_risk', '../data/audit_data/audit_risk_formatted.csv', 'Risk', [], []],
+        ['audit risk', '../data/audit_data/audit_risk_formatted.csv', 'Risk', [], []],
 
         ['avila', '../data/avila/avila_formatted.csv', 'Class', [], []],
 
         ['banknote', '../data/banknote/data_banknote_authentication.csv', 'class', [], []],
 
-        ['bankruptcy_polish', '../data/bankruptcy_polish/3year.csv', 'class', [], []],
+        ['bankruptcy polish', '../data/bankruptcy_polish/3year.csv', 'class', [], []],
 
         ['cardiotocography', '../data/cardiotocography/CTG_formatted.csv', 'CLASS', [],
          ['b', 'e', 'LBE', 'DR', 'Tendency', 'A', 'B', 'C', 'D', 'E', 'AD', 'DE', 'LD', 'FS', 'SUSP']],
@@ -164,35 +212,35 @@ if __name__ == "__main__":
         ['collins', "../data/collins/collins_formatted.csv", 'Corp.Genre', [],
          ["Text", "Genre", "Counter", "Corpus"]],
 
-        ['defaults_credit_card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv",
+        ['default credit card', "../data/defaults_credit_card/defaults_credit_card_formatted.csv",
          'default payment next month', ['SEX', 'EDUCATION', 'MARRIAGE'], ['ID']],
 
-        ['dry_bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", 'Class', [], []],
+        ['dry bean', "../data/dry_bean/Dry_Bean_Dataset_formatted.csv", 'Class', [], []],
 
-        ['eeg_eye_state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', 'eyeDetection', [], []],
+        ['eeg eye state', '../data/eeg_eye_state/eeg_eye_state_formatted.csv', 'eyeDetection', [], []],
 
         ['htru2', '../data/HTRU2/HTRU_2.csv', 'class', [], []],
 
         ['iris', '../data/iris/iris.csv', 'class', [], []],
 
         # deu erro max_depth 8
-        ['letter_recognition', '../data/letter_recognition/letter-recognition_formatted.csv', 'lettr', [], []],
+        ['letter recognition', '../data/letter_recognition/letter-recognition_formatted.csv', 'lettr', [], []],
 
         ['mice', '../data/mice/mice_formatted.csv', 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
 
-        ['obs_network', '../data/obs_network/obs_network_dataset_formatted.csv', 'Class',
+        ['obs network', '../data/obs_network/obs_network_dataset_formatted.csv', 'Class',
          ['Node', 'NodeStatus'], ['id']],
 
-        ['occupancy_room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', 'Room_Occupancy_Count',
+        ['occupancy room', '../data/occupancy_room/Occupancy_Estimation_formatted.csv', 'Room_Occupancy_Count',
          [], ['Date', 'Time']],
 
         # Should also include 'TrafficType' for categorial col, but has many values
-        ['online_shoppers_intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
+        ['online shoppers intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
          'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
 
-        ['poker_hand', "../data/poker_hand/poker_hand.csv", 'class', [], []],
+        ['poker hand', "../data/poker_hand/poker_hand.csv", 'class', [], []],
 
-        ['pen_digits', "../data/pen_digits/pendigits_formatted.csv", 'digit', [], []],
+        ['pen digits', "../data/pen_digits/pendigits_formatted.csv", 'digit', [], []],
 
         ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", 'class', [], []]
 
@@ -232,8 +280,22 @@ if __name__ == "__main__":
                 # test1.run(debug=True)
                 # test2.run(debug=True)
 
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json")
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json")
+    datasets_by_name = {
+        ds[0]: {
+            "csv": ds[1],
+            "col_class": ds[2],
+        }
+        for ds in datasets}
+
+    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
+    #                           load_from="json")
+    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+    #                           load_from="json", ds_by_name=datasets_by_name)
+
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
+                              load_from="pickle", ds_by_name=datasets_by_name)
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle",
+                              load_from="pickle", ds_by_name=datasets_by_name)
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

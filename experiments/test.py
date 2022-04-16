@@ -19,11 +19,13 @@ class MetricType(Enum):
     wad = "wad"
     waes = "waes"
     unbalanced_splits = "unbalanced_splits"
+    nodes = "nodes"
+    features = "features"
 
 
 class Metrics:
     def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wad, waes,
-                 unbalanced_splits):
+                 unbalanced_splits, nodes, features):
         self.factor = factor
         self.train_accuracy = train_accuracy
         self.test_accuracy = test_accuracy
@@ -32,6 +34,8 @@ class Metrics:
         self.wad = wad
         self.waes = waes
         self.unbalanced_splits = unbalanced_splits
+        self.nodes = nodes
+        self.features = features
 
     def get_metrics(self):
         return {
@@ -42,7 +46,9 @@ class Metrics:
             MetricType.max_depth_redundant: self.max_depth_redundant,
             MetricType.wad: self.wad,
             MetricType.waes: self.waes,
-            MetricType.unbalanced_splits: self.unbalanced_splits
+            MetricType.unbalanced_splits: self.unbalanced_splits,
+            MetricType.nodes: self.nodes,
+            MetricType.features: self.features
         }
 
 
@@ -149,11 +155,7 @@ class Test:
 
         return diff_results
 
-    def run(self, store_results=True, plot_graphic=False, debug=False):
-        print("############################")
-        print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
-              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
-
+    def parse_dataset(self):
         # Read CSV
         np.set_printoptions(suppress=True)
         data = pd.read_csv(self.csv_file)
@@ -172,22 +174,34 @@ class Test:
         X = data.drop(labels=self.col_class_name, axis=1).to_numpy()
         y = data[self.col_class_name].astype('int').to_numpy() - 1
 
+        return X, y
+
+    @staticmethod
+    def split_train_test(X, y, random_state=42, train_size=0.7):
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state, train_size=train_size)
+        return X_train, X_test, y_train, y_test
+
+    def run(self, store_results=True, plot_graphic=False, debug=False):
+        print("############################")
+        print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
+
+        # Read CSV
+        X, y = self.parse_dataset()
+
         # Populate dataset metrics
         self.n_samples, self.n_features = X.shape
         self.n_classes = len(set(y))
 
-        unique, counts = np.unique(y, return_counts=True)
-        dict(zip(unique, counts))
-
         # Training Models
-        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, train_size=0.7)
+        X_train, X_test, y_train, y_test = self.split_train_test(X, y)
 
         results = []
         for factor in self.factors:
             dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
             score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
-            max_depth, max_depth_redundant, wad, waes = dt.get_explainability_metrics()
-            unbalanced_splits = dt.get_unbalanced_splits()
+            unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, features =\
+                dt.get_explainability_metrics()
             if debug:
                 # dt.tree_.debug(
                 #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
@@ -198,7 +212,7 @@ class Test:
                 dt.tree_.debug_pydot(tree_img_file)
             print(f"\nTrain/test accuracy for factor {factor}: {score_train}, {score_test}")
             print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
-                  f"waes: {waes}")
+                  f"waes: {waes}, nodes: {nodes}, features: {features}")
             print("----------------------------")
             results.append({
                 MetricType.factor: round(factor, 2),
@@ -208,7 +222,9 @@ class Test:
                 MetricType.max_depth_redundant: round(max_depth_redundant, 3),
                 MetricType.wad: round(wad, 3),
                 MetricType.waes: round(waes, 3),
-                MetricType.unbalanced_splits: unbalanced_splits
+                MetricType.unbalanced_splits: unbalanced_splits,
+                MetricType.nodes: nodes,
+                MetricType.features: features
             })
 
             # Save Tree objects

@@ -59,12 +59,12 @@ class DefaultClassifier:
         self.fit(X_train, y_train, modified_factor=modified_factor)
         return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
 
-    def get_explainability_metrics(self):
-        # Returns max_depth, max_depth_redundant, wad, waes
-        return self.tree_.get_explainability_metrics(self.n_features_)
+    def get_score_without_fit(self, X_train, y_train, X_test, y_test):
+        return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
 
-    def get_unbalanced_splits(self):
-        return self.tree_.get_unbalanced_splits()
+    def get_explainability_metrics(self):
+        # Returns unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, distinct features
+        return self.tree_.get_explainability_metrics(self.n_features_)
 
     def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
         raise NotImplementedError()
