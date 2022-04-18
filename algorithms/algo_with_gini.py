@@ -77,7 +77,9 @@ class AlgoWithGini(Algo):
 
         # Gini of current node.
         num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
-        best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent)
+        best_gini_parent = 1.0 - sum((n / m) ** 2 for n in num_parent)
+        best_gini = best_gini_parent
+        best_modified_gini = math.inf
 
         # variables for the 2-step partition
         a_min_gini = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
@@ -91,22 +93,27 @@ class AlgoWithGini(Algo):
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_gini, gini_a, threshold_a_star, cost_a_star, thresholds_a = \
+            threshold_a_gini_balanced, gini_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
                 self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
-            modified_gini_a = gini_a * modified_factor if feature_index_occurrences[a] else gini_a
+            modified_gini_a = gini_a_balanced * modified_factor if feature_index_occurrences[a] else gini_a_balanced
 
             all_thresholds.append(thresholds_a)
             if cost_a_star < cost_attr_min:
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if modified_gini_a < best_gini:
+            if gini_a_balanced < best_gini:
+                best_gini = gini_a_balanced
+            if modified_gini_a < best_modified_gini:
                 a_min_gini = a
-                t_min_gini = threshold_a_gini
-                best_gini = modified_gini_a
+                t_min_gini = threshold_a_gini_balanced
+                best_modified_gini = modified_gini_a
 
         if a_min_gini is not None:
-            return a_min_gini, t_min_gini, None, True
+            if best_gini < best_gini_parent:
+                return a_min_gini, t_min_gini, None, True
+            else:
+                return None, None, None, None
 
         # Else, Perform a 2-step partition
         if t_star is not None:
