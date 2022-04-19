@@ -56,7 +56,7 @@ class AlgoWithGini(Algo):
         cost_star = math.inf if t_star is None else cost_star
         return t_best_gini, best_gini, t_star, cost_star, all_thresholds
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, father_feature=None):
         """
         Find the next split for a node.
         Returns:
@@ -73,12 +73,12 @@ class AlgoWithGini(Algo):
 
         node_pairs = self._number_pairs(y)
         node_product = node_pairs * y.size
-        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]  # tirar
+        classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
-        best_gini_parent = 1.0 - sum((n / m) ** 2 for n in num_parent)
-        best_gini = best_gini_parent
+        gini_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
+        gini_modified_parent = gini_parent * modified_factor if \
+            father_feature and feature_index_occurrences[father_feature] else gini_parent
         best_modified_gini = math.inf
 
         # variables for the 2-step partition
@@ -102,15 +102,13 @@ class AlgoWithGini(Algo):
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if gini_a_balanced < best_gini:
-                best_gini = gini_a_balanced
-            if modified_gini_a < best_modified_gini:
+            if threshold_a_gini_balanced is not None and modified_gini_a < best_modified_gini:
                 a_min_gini = a
                 t_min_gini = threshold_a_gini_balanced
                 best_modified_gini = modified_gini_a
 
         if a_min_gini is not None:
-            if best_gini < best_gini_parent:
+            if best_modified_gini < gini_modified_parent:
                 return a_min_gini, t_min_gini, None, True
             else:
                 return None, None, None, None

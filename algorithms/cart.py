@@ -1,9 +1,9 @@
 """Implementation of the CART algorithm to train decision tree classifiers."""
-import math
 import numpy as np
 
 from algorithms.default_algorithm import DefaultClassifier
 from tree import tree
+from utils.compare import lt
 
 
 class Cart(DefaultClassifier):
