@@ -116,7 +116,7 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
                     row = [file_data['dataset'], file_data['algorithm'], file_data['max_depth_stop'],
                            file_data['min_samples_stop']]
 
-                    for it in header[5:]:
+                    for it in header[4:]:
                         row.append(result[it])
                     rows.append(row)
     # Load from pickles
@@ -238,9 +238,9 @@ if __name__ == "__main__":
         ['online shoppers intention', '../data/online_shoppers_intention/online_shoppers_intention_formatted.csv',
          'Revenue', ['Month', 'OperatingSystems', 'Browser', 'Region', 'Weekend'], []],
 
-        ['poker hand', "../data/poker_hand/poker_hand.csv", 'class', [], []],
-
         ['pen digits', "../data/pen_digits/pendigits_formatted.csv", 'digit', [], []],
+
+        ['poker hand', "../data/poker_hand/poker_hand.csv", 'class', [], []],
 
         ['sensorless', "../data/sensorless/sensorless_drive_diagnosis.csv", 'class', [], []]
 
@@ -263,7 +263,7 @@ if __name__ == "__main__":
 
     all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
     depths = [6]
-    min_samples_list = [30]
+    min_samples_list = [0]
 
     # Run tests
     for ds in all_datasets:
@@ -273,12 +273,12 @@ if __name__ == "__main__":
                 # Cols to deleted was already deleted
                 test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/cart")
+                             results_folder="results/cart", factors=[0.95, 1])
                 test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/algo_gini")
-                # test1.run(debug=True)
-                # test2.run(debug=True)
+                             results_folder="results/algo_gini", factors=[0.95, 1])
+                test1.run(debug=False)
+                test2.run(debug=False)
 
     datasets_by_name = {
         ds[0]: {
@@ -287,15 +287,14 @@ if __name__ == "__main__":
         }
         for ds in datasets}
 
-    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
-    #                           load_from="json")
-    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-    #                           load_from="json", ds_by_name=datasets_by_name)
-
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
-                              load_from="pickle", ds_by_name=datasets_by_name)
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle",
-                              load_from="pickle", ds_by_name=datasets_by_name)
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
+                              load_from="json")
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+                              load_from="json", ds_by_name=datasets_by_name)
+    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
+    #                           load_from="pickle", ds_by_name=datasets_by_name)
+    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle",
+    #                           load_from="pickle", ds_by_name=datasets_by_name)
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
