@@ -24,6 +24,11 @@ If errors ocurred when debuggin try remote the following lines from
 <policy domain="coder" rights="none" pattern="XPS" />
 
 ```
+Also try changing maximum width and height to 50 pixels, in file `/etc/ImageMagick/policy.xml`:
+```
+  <policy domain="resource" name="width" value="50KP"/>
+  <policy domain="resource" name="height" value="50KP"/>
+```
 
 
 
