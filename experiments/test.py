@@ -182,7 +182,7 @@ class Test:
         return X_train, X_test, y_train, y_test
 
     def run(self, store_results=True, plot_graphic=False, debug=False):
-        print("############################")
+        print("\n#######################################################################")
         print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
               f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
 
@@ -240,5 +240,5 @@ class Test:
         if store_results:
             self._store_results()
 
-        print(f"### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
-              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
+        print(f"\n### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
+              f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}\n")
