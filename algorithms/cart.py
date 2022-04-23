@@ -3,14 +3,14 @@ import numpy as np
 
 from algorithms.default_algorithm import DefaultClassifier
 from tree import tree
-from utils.compare import lt
 
 
 class Cart(DefaultClassifier):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1,
+                    father_feature=None):
         """Find the best split for a node.
 
         "Best" means that the average impurity of the two children, weighted by their
@@ -35,10 +35,9 @@ class Cart(DefaultClassifier):
         num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        best_gini = 1.0 - sum((n / m) ** 2 for n in num_parent)  # Cart original
-        # In this case, this algorithm has the same criterion as the our Algo, i.e, split node
-        # even the child's weighted Gini is equal to father
-        # best_gini = math.inf
+        gini_parent = 1.0 - sum((n / m) ** 2 for n in num_parent)  # Cart original
+        best_modified_gini = gini_parent * modified_factor if \
+            father_feature and feature_index_occurrences[father_feature] else gini_parent
 
         best_idx, best_thr = None, None
 
@@ -75,14 +74,15 @@ class Cart(DefaultClassifier):
                 if thresholds[i] == thresholds[i - 1]:
                     continue
 
-                if modified_gini < best_gini:
-                    best_gini = modified_gini
+                if modified_gini < best_modified_gini:
+                    best_modified_gini = modified_gini
                     best_idx = idx
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2  # midpoint
 
         return best_idx, best_thr
 
-    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True):
+    def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True,
+                   father_feature=None):
         """Build a decision tree by recursively finding the best split."""
         # Population for each class in current node. The predicted class is the one with
         # largest population.
@@ -100,7 +100,7 @@ class Cart(DefaultClassifier):
         # Split recursively until maximum depth is reached.
         if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
             idx, thr = self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
-                                        modified_factor=modified_factor)
+                                        modified_factor=modified_factor, father_feature=father_feature)
             if idx is not None:
                 indices_left = X[:, idx] < thr
                 X_left, y_left = X[indices_left], y[indices_left]
@@ -110,8 +110,10 @@ class Cart(DefaultClassifier):
                 node.feature_index_occurrences[idx] += 1
                 node.left = self._grow_tree(X_left, y_left, depth + 1,
                                             feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor, calculate_gini=calculate_gini)
+                                            modified_factor=modified_factor, calculate_gini=calculate_gini,
+                                            father_feature=node.feature_index)
                 node.right = self._grow_tree(X_right, y_right, depth + 1,
                                              feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                             modified_factor=modified_factor, calculate_gini=calculate_gini)
+                                             modified_factor=modified_factor, calculate_gini=calculate_gini,
+                                             father_feature=node.feature_index)
         return node
