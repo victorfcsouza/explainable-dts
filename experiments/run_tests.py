@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 import pickle
 
-from experiments.test import MetricType, Test
+from experiments.test import MetricType, Test, ResultJson, Metrics
 from algorithms.cart import Cart
 from algorithms.algo_with_gini import AlgoWithGini
 from tree.tree import Node
@@ -41,7 +41,7 @@ def plot_opt_table(bins=False):
     json_files = [f for f in files if 'json' in f]
 
     diff_data = []
-    cols = [MetricType.factor.value, MetricType.train_accuracy.value, MetricType.test_accuracy.value,
+    cols = [MetricType.gini_factor.value, MetricType.train_accuracy.value, MetricType.test_accuracy.value,
             MetricType.max_depth.value, MetricType.max_depth_redundant.value, MetricType.wad.value,
             MetricType.waes.value]
     rows = []
@@ -102,9 +102,9 @@ def create_bins(csv_file, bins=10, cols_to_remove=None):
 
 def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name: dict = None):
     files = [f for f in listdir(result_dir) if isfile(join(result_dir, f))]
-    header = ['dataset', 'algorithm', 'max_depth_stop', 'min_samples_stop',
-              'factor', 'train_accuracy', 'test_accuracy', 'unbalanced_splits', 'max_depth',
-              'max_depth_redundant', 'wad', 'waes', 'nodes', 'features']
+    test_info_header = ResultJson.get_cols()
+    metrics_header = Metrics.get_cols()
+    header = test_info_header + metrics_header
 
     if load_from == "json":
         json_files = [f for f in files if 'json' in f]
@@ -113,11 +113,8 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             with open(result_dir + "/" + file) as json_file:
                 file_data = json.load(json_file)
                 for result in file_data['results']:
-                    row = [file_data['dataset'], file_data['algorithm'], file_data['max_depth_stop'],
-                           file_data['min_samples_stop']]
-
-                    for it in header[4:]:
-                        row.append(result[it])
+                    row = [file_data[info_header] for info_header in test_info_header]
+                    row += [result[metric] for metric in metrics_header]
                     rows.append(row)
     # Load from pickles
     elif load_from == "pickle":
@@ -134,8 +131,13 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             max_depth_stop = int(pickle_info[depth_index + 1])
             min_samples_stop_index = int(pickle_info.index("samples"))
             min_samples = pickle_info[min_samples_stop_index + 1]
-            factor_index = pickle_info.index("factor")
-            factor = float(pickle_info[factor_index + 1])
+            gini_factor_index = pickle_info.index("gini-factor")
+            gini_factor = float(pickle_info[gini_factor_index + 1])
+            gamma_factor_index = pickle_info.index("gamma")
+            try:
+                gamma = float(pickle_info[gamma_factor_index + 1])
+            except ValueError:
+                gamma = None
             # Get Train and test accuracy
             if algorithm == "AlgoWithGini":
                 clf = AlgoWithGini
@@ -144,7 +146,8 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             else:
                 raise ValueError("Classifier not found!")
             print(f"### Generating results for {dataset} with {algorithm}, "
-                  f"max_depth {max_depth_stop}, min_samples_stop {min_samples_stop} and factor {factor}")
+                  f"max_depth {max_depth_stop}, min_samples_stop {min_samples_stop}, gini factor {gini_factor} "
+                  f"and gamma {gamma}")
 
             with open(f"{result_dir}/{pickle_filename}", "rb") as f:
                 tree_obj: Node = pickle.load(f)
@@ -158,7 +161,8 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
                 X_train, X_test, y_train, y_test = test.split_train_test(X, y)
                 score_train, score_test = clf_obj.get_score_without_fit(X_train, y_train, X_test, y_test)
                 metrics = tree_obj.get_explainability_metrics(num_features)
-                row = [dataset, algorithm, max_depth_stop, min_samples, factor, score_train, score_test, *metrics]
+                row = [dataset, algorithm, max_depth_stop, min_samples, gini_factor, gamma, score_train, score_test,
+                       *metrics]
                 rows.append(row)
 
     else:
@@ -273,10 +277,11 @@ if __name__ == "__main__":
                 # Cols to deleted was already deleted
                 test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/cart", factors=[0.95, 1])
+                             results_folder="results/cart", gini_factors=[1], gamma_factors=[None])
                 test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/algo_gini", factors=[0.95, 1])
+                             results_folder="results/algo_gini", gini_factors=[0.97],
+                             gamma_factors=[0.5, 0.6, 0.7, 0.8, 0.9])
                 test1.run(debug=False)
                 test2.run(debug=False)
 

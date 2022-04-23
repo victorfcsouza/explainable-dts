@@ -97,8 +97,7 @@ class Algo(DefaultClassifier):
 
         return max_cost
 
-    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
-        gamma_factor = 2 / 3
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
         m = y.size
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
@@ -150,7 +149,8 @@ class Algo(DefaultClassifier):
         X_right, y_right = self._set_objects(X, y, a, 'gt', t)
         return max(self._number_pairs(y_left) * len(y_left), self._number_pairs(y_right) * len(y_right))
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, father_feature=None):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2 / 3,
+                    father_feature=None):
         """
         Find the next split for a node.
         Returns:
@@ -183,7 +183,7 @@ class Algo(DefaultClassifier):
         # Loop through all features.
         for a in range(self.n_features_):
             threshold_a_balanced, cost_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
-                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
+                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor)
             all_thresholds.append(thresholds_a)
             if cost_a_star < cost_attr_min:
                 a_star = a
@@ -227,7 +227,7 @@ class Algo(DefaultClassifier):
         return node
 
     def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=False,
-                   father_feature=None):
+                   father_feature=None, gamma_factor=2 / 3):
         """Build a decision tree by recursively finding the best split."""
         # Population for each class in current node. The predicted class is the one with
         # largest population.
@@ -235,9 +235,10 @@ class Algo(DefaultClassifier):
 
         # Split recursively until maximum depth is reached.
         if depth < self.max_depth and node.num_samples >= self.min_samples_stop:
-            idx, thr, next_thr, balanced_split =\
+            idx, thr, next_thr, balanced_split = \
                 self._best_split(X, y, feature_index_occurrences=feature_index_occurrences,
-                                 modified_factor=modified_factor, father_feature=father_feature)
+                                 modified_factor=modified_factor, father_feature=father_feature,
+                                 gamma_factor=gamma_factor)
             if idx is not None:
                 indices_left = X[:, idx] <= thr
                 X_left, y_left = X[indices_left], y[indices_left]
@@ -251,13 +252,13 @@ class Algo(DefaultClassifier):
                 if next_thr is None:
                     node.left = self._grow_tree(X_left, y_left, depth + 1,
                                                 feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                                modified_factor=modified_factor, calculate_gini=calculate_gini,
-                                                father_feature=node.feature_index)
+                                                modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                                calculate_gini=calculate_gini, father_feature=node.feature_index)
 
                     node.right = self._grow_tree(X_right, y_right, depth + 1,
                                                  feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                                 modified_factor=modified_factor, calculate_gini=calculate_gini,
-                                                 father_feature=node.feature_index)
+                                                 modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                                 calculate_gini=calculate_gini, father_feature=node.feature_index)
                 # case 2
                 else:
                     child_features = node.feature_index_occurrences.copy()
@@ -273,24 +274,28 @@ class Algo(DefaultClassifier):
                         left_node.left = \
                             self._grow_tree(X_left_left, y_left_left, depth + 2,
                                             feature_index_occurrences=left_node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor, calculate_gini=calculate_gini,
+                                            modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                            calculate_gini=calculate_gini,
                                             father_feature=left_node.feature_index)
                         left_node.right = \
                             self._grow_tree(X_left_right, y_left_right, depth + 2,
                                             feature_index_occurrences=left_node.feature_index_occurrences.copy(),
-                                            modified_factor=modified_factor, calculate_gini=calculate_gini,
+                                            modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                            calculate_gini=calculate_gini,
                                             father_feature=left_node.feature_index)
                     node.right = self._grow_tree(X_right, y_right, depth + 1,
                                                  feature_index_occurrences=node.feature_index_occurrences.copy(),
-                                                 modified_factor=modified_factor, calculate_gini=calculate_gini,
+                                                 modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                                 calculate_gini=calculate_gini,
                                                  father_feature=node.feature_index)
         return node
 
-    def fit(self, X, y, modified_factor=1):
+    def fit(self, X, y, modified_factor=1, gamma_factor=2 / 3):
         """Build decision tree classifier."""
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
         self.n_samples = len(y)
         self.n_features_ = X.shape[1]
         feature_index_occurrences = [0] * self.n_features_
         self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
-                                     modified_factor=modified_factor, calculate_gini=False)
+                                     modified_factor=modified_factor, gamma_factor=gamma_factor,
+                                     calculate_gini=False)

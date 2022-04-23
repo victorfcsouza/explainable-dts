@@ -82,7 +82,7 @@ class Cart(DefaultClassifier):
         return best_idx, best_thr
 
     def _grow_tree(self, X, y, depth=0, feature_index_occurrences=None, modified_factor=1, calculate_gini=True,
-                   father_feature=None):
+                   father_feature=None, gamma_factor=None):
         """Build a decision tree by recursively finding the best split."""
         # Population for each class in current node. The predicted class is the one with
         # largest population.

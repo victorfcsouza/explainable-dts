@@ -6,12 +6,14 @@ import numpy as np
 import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
+from typing import Dict, List
 
 from utils.file_utils import create_dir
 
 
 class MetricType(Enum):
-    factor = "factor"
+    gini_factor = "gini_factor"
+    gamma_factor = "gamma"
     train_accuracy = "train_accuracy"
     test_accuracy = "test_accuracy"
     max_depth = "max_depth"
@@ -24,39 +26,78 @@ class MetricType(Enum):
 
 
 class Metrics:
-    def __init__(self, factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wad, waes,
-                 unbalanced_splits, nodes, features):
-        self.factor = factor
+    def __init__(self, gini_factor, gamma_factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wad,
+                 waes, unbalanced_splits, nodes, features):
+        self.gini_factor = gini_factor
+        self.gamma_factor = gamma_factor
         self.train_accuracy = train_accuracy
         self.test_accuracy = test_accuracy
+        self.unbalanced_splits = unbalanced_splits
         self.max_depth = max_depth
         self.max_depth_redundant = max_depth_redundant
         self.wad = wad
         self.waes = waes
-        self.unbalanced_splits = unbalanced_splits
         self.nodes = nodes
         self.features = features
 
     def get_metrics(self):
         return {
-            MetricType.factor: self.factor,
-            MetricType.train_accuracy: self.train_accuracy,
-            MetricType.test_accuracy: self.test_accuracy,
-            MetricType.max_depth: self.max_depth,
-            MetricType.max_depth_redundant: self.max_depth_redundant,
-            MetricType.wad: self.wad,
-            MetricType.waes: self.waes,
+            MetricType.gini_factor: self.gini_factor,
+            MetricType.gamma_factor: self.gamma_factor,
+            MetricType.train_accuracy: round(self.train_accuracy, 3),
+            MetricType.test_accuracy: round(self.test_accuracy, 3),
+            MetricType.max_depth: round(self.max_depth, 3),
+            MetricType.max_depth_redundant: round(self.max_depth_redundant, 3),
+            MetricType.wad: round(self.wad, 3),
+            MetricType.waes: round(self.waes, 3),
             MetricType.unbalanced_splits: self.unbalanced_splits,
             MetricType.nodes: self.nodes,
             MetricType.features: self.features
+        }
+
+    @staticmethod
+    def get_cols():
+        return [MetricType.gini_factor.value,
+                MetricType.gamma_factor.value,
+                MetricType.train_accuracy.value,
+                MetricType.test_accuracy.value,
+                MetricType.max_depth.value,
+                MetricType.max_depth_redundant.value,
+                MetricType.wad.value,
+                MetricType.waes.value,
+                MetricType.unbalanced_splits.value,
+                MetricType.nodes.value,
+                MetricType.features.value]
+
+
+class ResultJson:
+    def __init__(self, dataset, algorithm, max_depth_stop, min_samples_stop, results):
+        self.dataset = dataset
+        self.algorithm = algorithm
+        self.max_depth_stop = max_depth_stop
+        self.min_samples_stop = min_samples_stop
+        self.results = results
+
+    @staticmethod
+    def get_cols():
+        return ["dataset", "algorithm", "max_depth_stop", "min_samples_stop"]
+
+    def get_result_json(self):
+        return {
+            'dataset': self.dataset,
+            'algorithm': self.algorithm,
+            'max_depth_stop': self.max_depth_stop,
+            'min_samples_stop': self.min_samples_stop,
+            # 'opt_factor': self._get_opt_factor(),
+            'results': [{key.value: metric[key] for key in metric} for metric in self.results]  # Convert to string keys
         }
 
 
 class Test:
     def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int,
                  col_class_name: str, cols_to_delete: list = None, min_samples_stop: int = 0,
-                 factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
-                          0.97, 0.98, 0.99, 1), results_folder="results"):
+                 gini_factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
+                               0.97, 0.98, 0.99, 1), gamma_factors=(0.5, 0.6, 0.7, 0.8, 0.9), results_folder="results"):
         self.classifier = classifier
         self.dataset_name = dataset_name
         self.csv_file = csv_file
@@ -65,23 +106,23 @@ class Test:
         self.max_depth_stop = max_depth_stop
         self.min_samples_stop = min_samples_stop
         self.results_folder = results_folder
-        self.factors = factors
+        self.gini_factors = gini_factors
+        self.gamma_factors = gamma_factors
         self.n_classes = None  # Need to update via run()
         self.n_samples = None  # Need to update via run()
         self.n_features = None  # Need to update via run()
         self.results = None  # Need to update via run()
 
-    def _get_filename(self, extension: str, factor: float = None, sub_folder=None) -> str:
+    def _get_filename(self, extension: str, gini_factor: float = None, gamma_factor: float = None,
+                      sub_folder=None) -> str:
         folder = f"{self.results_folder}/{sub_folder}" if sub_folder else f"{self.results_folder}"
         filename = f"{folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}"
-        if factor:
-            filename += f"_factor_{factor}"
+                   f"_samples_{self.min_samples_stop}_gini-factor_{gini_factor}_gamma_{gamma_factor}"
         filename += f".{extension}"
         return filename
 
     def _plot_graphic(self):
-        factors = [metric[MetricType.factor] for metric in self.results]
+        factors = [metric[MetricType.gini_factor] for metric in self.results]
         train_accuracy_list = [metric[MetricType.train_accuracy] for metric in self.results]
         test_accuracy_list = [metric[MetricType.test_accuracy] for metric in self.results]
         max_depth_list = [metric[MetricType.max_depth] for metric in self.results]
@@ -133,7 +174,7 @@ class Test:
         Also, get the diff compared to original values (factor=1) in percentage
         """
         # Assume that results are ordered by increasing factors
-        reversed_results = sorted(self.results, key=lambda x: x[MetricType.factor], reverse=True)
+        reversed_results = sorted(self.results, key=lambda x: x[MetricType.gini_factor], reverse=True)
         max_test_accuracy = reversed_results[0][MetricType.test_accuracy]
 
         max_metrics = reversed_results[0]
@@ -147,7 +188,7 @@ class Test:
 
         diff_results = dict()
         for key in max_metrics:
-            if key == MetricType.factor:
+            if key == MetricType.gini_factor:
                 diff_results[key.value] = opt_metrics[key]
             else:
                 diff_metric = round(100 * (opt_metrics[key] - max_metrics[key]) / max_metrics[key])
@@ -197,42 +238,47 @@ class Test:
         X_train, X_test, y_train, y_test = self.split_train_test(X, y)
 
         results = []
-        for factor in self.factors:
-            dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
-            score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=factor)
-            unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, features =\
-                dt.get_explainability_metrics()
-            if debug:
-                # dt.tree_.debug(
-                #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
-                #     class_names=["Class {}".format(i) for i in range(len(y_train))],
-                #     show_details=True
-                # )
-                tree_img_file = self._get_filename(extension="png", factor=factor, sub_folder="img")
-                dt.tree_.debug_pydot(tree_img_file)
-            print(f"\nTrain/test accuracy for factor {factor}: {score_train}, {score_test}")
-            print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
-                  f"waes: {waes}, nodes: {nodes}, features: {features}")
-            print("----------------------------")
-            results.append({
-                MetricType.factor: round(factor, 2),
-                MetricType.train_accuracy: round(score_train, 3),
-                MetricType.test_accuracy: round(score_test, 3),
-                MetricType.max_depth: round(max_depth, 3),
-                MetricType.max_depth_redundant: round(max_depth_redundant, 3),
-                MetricType.wad: round(wad, 3),
-                MetricType.waes: round(waes, 3),
-                MetricType.unbalanced_splits: unbalanced_splits,
-                MetricType.nodes: nodes,
-                MetricType.features: features
-            })
+        for gini_factor in self.gini_factors:
+            for gamma_factor in self.gamma_factors:
+                dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
+                score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=gini_factor,
+                                                       gamma_factor=gamma_factor)
+                unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, features = \
+                    dt.get_explainability_metrics()
+                if debug:
+                    # dt.tree_.debug(
+                    #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
+                    #     class_names=["Class {}".format(i) for i in range(len(y_train))],
+                    #     show_details=True
+                    # )
+                    tree_img_file = self._get_filename(extension="png", gini_factor=gini_factor, sub_folder="img")
+                    dt.tree_.debug_pydot(tree_img_file)
+                print(f"\nTrain/test accuracy for gini factor {gini_factor} and gamma {gamma_factor}: "
+                      f"{score_train}, {score_test}")
+                print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
+                      f"waes: {waes}, nodes: {nodes}, features: {features}")
+                print("----------------------------")
+                metrics = Metrics(gini_factor=gini_factor,
+                                  gamma_factor=gamma_factor,
+                                  train_accuracy=score_train,
+                                  test_accuracy=score_test,
+                                  max_depth=max_depth,
+                                  max_depth_redundant=max_depth_redundant,
+                                  wad=wad,
+                                  waes=waes,
+                                  unbalanced_splits=unbalanced_splits,
+                                  nodes=nodes,
+                                  features=features)
 
-            # Save Tree objects
-            if store_results:
-                pickle_name = self._get_filename(extension="pickle", factor=factor, sub_folder="pickle")
-                create_dir(pickle_name)
-                with open(pickle_name, 'wb') as handle:
-                    pickle.dump(dt.tree_, handle)
+                results.append(metrics.get_metrics())
+
+                # Save Tree objects
+                if store_results:
+                    pickle_name = self._get_filename(extension="pickle", gini_factor=gini_factor,
+                                                     gamma_factor=gamma_factor, sub_folder="pickle")
+                    create_dir(pickle_name)
+                    with open(pickle_name, 'wb') as handle:
+                        pickle.dump(dt.tree_, handle)
 
         self.results = results
         if plot_graphic:

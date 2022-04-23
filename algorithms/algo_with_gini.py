@@ -8,8 +8,7 @@ class AlgoWithGini(Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product):
-        gamma_factor = 2 / 3
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
         m = y.size  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
@@ -56,7 +55,8 @@ class AlgoWithGini(Algo):
         cost_star = math.inf if t_star is None else cost_star
         return t_best_gini, best_gini, t_star, cost_star, all_thresholds
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, father_feature=None):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2/3,
+                    father_feature=None):
         """
         Find the next split for a node.
         Returns:
@@ -94,7 +94,7 @@ class AlgoWithGini(Algo):
         # Loop through all features.
         for a in range(self.n_features_):
             threshold_a_gini_balanced, gini_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
-                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product)
+                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor)
             modified_gini_a = gini_a_balanced * modified_factor if feature_index_occurrences[a] else gini_a_balanced
 
             all_thresholds.append(thresholds_a)
