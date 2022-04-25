@@ -117,7 +117,11 @@ class Test:
                       sub_folder=None) -> str:
         folder = f"{self.results_folder}/{sub_folder}" if sub_folder else f"{self.results_folder}"
         filename = f"{folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}_gini-factor_{gini_factor}_gamma_{gamma_factor}"
+                   f"_samples_{self.min_samples_stop}"
+        if gini_factor:
+            filename += f"_gini-factor_{gini_factor}"
+        if gamma_factor:
+            filename += f"_gamma_{gamma_factor}"
         filename += f".{extension}"
         return filename
 
@@ -251,7 +255,8 @@ class Test:
                     #     class_names=["Class {}".format(i) for i in range(len(y_train))],
                     #     show_details=True
                     # )
-                    tree_img_file = self._get_filename(extension="png", gini_factor=gini_factor, sub_folder="img")
+                    tree_img_file = self._get_filename(extension="png", gini_factor=gini_factor,
+                                                       gamma_factor=gamma_factor, sub_folder="img")
                     dt.tree_.debug_pydot(tree_img_file)
                 print(f"\nTrain/test accuracy for gini factor {gini_factor} and gamma {gamma_factor}: "
                       f"{score_train}, {score_test}")
