@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
-from typing import Dict, List
 
+from algorithms.algo_with_gini import AlgoWithGini
+from algorithms.cart import Cart
+from tree.tree import Node
 from utils.file_utils import create_dir
 
 
@@ -99,6 +101,7 @@ class Test:
                  gini_factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
                                0.97, 0.98, 0.99, 1), gamma_factors=(0.5, 0.6, 0.7, 0.8, 0.9), results_folder="results"):
         self.classifier = classifier
+        self.clf_obj = None  # in case of pickle
         self.dataset_name = dataset_name
         self.csv_file = csv_file
         self.col_class_name = col_class_name
@@ -293,3 +296,41 @@ class Test:
 
         print(f"\n### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
               f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}\n")
+
+    @staticmethod
+    def load_test_from_pickle(pickle_filepath, csv_file=None, col_class_name=None, cols_to_delete=None,
+                              results_folder="results"):
+        final_slash_idx = pickle_filepath.rfind("/")
+        pickle_filename = pickle_filepath[final_slash_idx + 1:]
+        pickle_info = pickle_filename.replace(".pickle", "").split("_")
+        dataset = pickle_info[0]
+        algorithm = pickle_info[1]
+        depth_index = pickle_info.index("depth")
+        max_depth_stop = int(pickle_info[depth_index + 1])
+        min_samples_stop_index = int(pickle_info.index("samples"))
+        min_samples_stop = pickle_info[min_samples_stop_index + 1]
+        gini_factor_index = pickle_info.index("gini-factor")
+        gini_factor = float(pickle_info[gini_factor_index + 1])
+        gamma_factor_index = pickle_info.index("gamma")
+        try:
+            gamma = float(pickle_info[gamma_factor_index + 1])
+        except ValueError:
+            gamma = None
+        # Get Train and test accuracy
+        if algorithm == "AlgoWithGini":
+            clf = AlgoWithGini
+        elif algorithm == "Cart":
+            clf = Cart
+        else:
+            raise ValueError("Classifier not found!")
+
+        with open(pickle_filepath, "rb") as f:
+            tree_obj: Node = pickle.load(f)
+            clf_obj = clf()
+            clf_obj.tree_ = tree_obj
+            test = Test(classifier=clf, dataset_name=dataset, csv_file=csv_file,
+                        max_depth_stop=max_depth_stop, col_class_name=col_class_name, cols_to_delete=cols_to_delete,
+                        min_samples_stop=min_samples_stop, gini_factors=[gini_factor], gamma_factors=[gamma],
+                        results_folder=results_folder)
+            test.clf_obj = clf_obj
+            return test
