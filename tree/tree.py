@@ -4,6 +4,8 @@ from pathlib import Path
 import pydot
 import subprocess
 
+from utils.random import COLOR_LIST
+
 
 class Node:
     """A decision tree node."""
@@ -143,7 +145,8 @@ class Node:
 
         def get_pydot_node(node):
             node_name = get_node_name(node)
-            fill_color = "none" if node.left or node.right else "gold"
+            fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
+
             threshold = str(round(node.threshold, 3) + 0) if node.left or node.right else None
             # Scientific values for small numbers
             if node.threshold is not None and abs(node.threshold) < 0.001:
@@ -262,19 +265,3 @@ class Node:
         unbalanced = unbalanced_splits[0]
         distinct_features = sum(features_distinct_metric)
         return unbalanced, max_depth, max_redundant_depth, wad, waes, nodes, distinct_features
-
-    def get_unbalanced_splits(self):
-        unbalanced_splits = [0]
-
-        # Recursive function
-        def visit_node(node: Node):
-            left_node: Node = node.left
-            right_node: Node = node.right
-            unbalanced_splits[0] += 1 if node.balanced_split is False else 0
-            if left_node:
-                visit_node(left_node)
-            if right_node:
-                visit_node(right_node)
-
-        visit_node(self)
-        return unbalanced_splits[0]
