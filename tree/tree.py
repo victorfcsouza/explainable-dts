@@ -1,4 +1,5 @@
 """Binary tree with decision tree semantics and ASCII visualization."""
+import copy
 import dot2tex as d2t
 from pathlib import Path
 import pydot
@@ -32,6 +33,8 @@ class Node:
 
         self.left = None
         self.right = None
+
+        self.pruned_class = None  # For pruning
 
     def get_node_depth(self):
         # Assert that get_explainability_metrics was previously run
@@ -145,7 +148,8 @@ class Node:
 
         def get_pydot_node(node):
             node_name = get_node_name(node)
-            fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
+            # fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
+            fill_color = "gold" if not node.left and not node.right else "none"
 
             threshold = str(round(node.threshold, 3) + 0) if node.left or node.right else None
             # Scientific values for small numbers
@@ -265,3 +269,43 @@ class Node:
         unbalanced = unbalanced_splits[0]
         distinct_features = sum(features_distinct_metric)
         return unbalanced, max_depth, max_redundant_depth, wad, waes, nodes, distinct_features
+
+    def get_pruned_tree(self):
+        def get_node_class(node):
+            """
+            Returns -1 if there is more than one class attributed in the subtree induced by node
+            Returns the class if there is only one such class.
+            """
+            if not node.left and not node.right:
+                node.pruned_class = node.predicted_class
+                return node.predicted_class
+
+            left_class = None
+            right_class = None
+            if node.left:
+                left_class = get_node_class(node.left)
+            if node.right:
+                right_class = get_node_class(node.right)
+
+            if left_class == right_class:
+                node.pruned_class = left_class
+            else:
+                node.pruned_class = -1
+            return node.pruned_class
+
+        # Get pruned class info
+        new_tree = copy.deepcopy(self)
+        get_node_class(new_tree)
+
+        # Prune nodes
+        def prune_node(node):
+            if node.pruned_class != -1:
+                node.left = None
+                node.right = None
+            if node.left:
+                prune_node(node.left)
+            if node.right:
+                prune_node(node.right)
+
+        prune_node(new_tree)
+        return new_tree

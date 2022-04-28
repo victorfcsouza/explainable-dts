@@ -63,11 +63,11 @@ class Metrics:
                 MetricType.gamma_factor.value,
                 MetricType.train_accuracy.value,
                 MetricType.test_accuracy.value,
+                MetricType.unbalanced_splits.value,
                 MetricType.max_depth.value,
                 MetricType.max_depth_redundant.value,
                 MetricType.wad.value,
                 MetricType.waes.value,
-                MetricType.unbalanced_splits.value,
                 MetricType.nodes.value,
                 MetricType.features.value]
 
@@ -311,8 +311,8 @@ class Test:
         min_samples_stop = pickle_info[min_samples_stop_index + 1]
         gini_factor_index = pickle_info.index("gini-factor")
         gini_factor = float(pickle_info[gini_factor_index + 1])
-        gamma_factor_index = pickle_info.index("gamma")
         try:
+            gamma_factor_index = pickle_info.index("gamma")
             gamma = float(pickle_info[gamma_factor_index + 1])
         except ValueError:
             gamma = None
@@ -326,7 +326,7 @@ class Test:
 
         with open(pickle_filepath, "rb") as f:
             tree_obj: Node = pickle.load(f)
-            clf_obj = clf()
+            clf_obj = clf(max_depth=max_depth_stop, min_samples_stop=min_samples_stop)
             clf_obj.tree_ = tree_obj
             test = Test(classifier=clf, dataset_name=dataset, csv_file=csv_file,
                         max_depth_stop=max_depth_stop, col_class_name=col_class_name, cols_to_delete=cols_to_delete,

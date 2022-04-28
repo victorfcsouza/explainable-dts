@@ -12,6 +12,7 @@ from experiments.test import MetricType, Test, ResultJson, Metrics
 from algorithms.cart import Cart
 from algorithms.algo_with_gini import AlgoWithGini
 from tree.tree import Node
+from utils.file_utils import create_dir
 
 RESULTS_FOLDER = "results"
 
@@ -98,6 +99,21 @@ def create_bins(csv_file, bins=10, cols_to_remove=None):
     index_str = csv_file.find(".csv")
     outfile = csv_file[:index_str] + "_bins" + ".csv"
     data.to_csv(outfile, encoding='utf-8', index=None)
+
+
+def save_pruned_trees(pickle_dir, pruned_dir):
+    files = [f for f in listdir(pickle_dir) if isfile(join(pickle_dir, f))]
+    pickle_files = [f for f in files if 'pickle' in f]
+    for pickle_filename in pickle_files:
+        print(f"### Punning tree {pickle_filename}")
+        test = Test.load_test_from_pickle(f"{pickle_dir}/{pickle_filename}")
+        clf_obj = test.clf_obj
+        tree_obj: Node = clf_obj.tree_
+        pruned_tree = tree_obj.get_pruned_tree()
+        pruned_filepath = f"{pruned_dir}/{pickle_filename}"
+        create_dir(pruned_filepath)
+        with open(pruned_filepath, 'wb') as handle:
+            pickle.dump(pruned_tree, handle)
 
 
 def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name: dict = None):
@@ -270,13 +286,15 @@ if __name__ == "__main__":
         }
         for ds in datasets}
 
+    # save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
+    # save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
     #                           load_from="json")
     # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
     #                           load_from="json", ds_by_name=datasets_by_name)
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle_pruned",
                               load_from="pickle", ds_by_name=datasets_by_name)
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle",
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle_pruned",
                               load_from="pickle", ds_by_name=datasets_by_name)
 
     # plot_opt_table(bins=False)
