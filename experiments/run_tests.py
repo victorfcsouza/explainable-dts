@@ -221,7 +221,6 @@ if __name__ == "__main__":
 
         ['iris', '../data/iris/iris.csv', 'class', [], []],
 
-        # deu erro max_depth 8
         ['letter recognition', '../data/letter_recognition/letter-recognition_formatted.csv', 'lettr', [], []],
 
         ['mice', '../data/mice/mice_formatted.csv', 'class', ["Genotype", "Treatment", "Behavior"], ["MouseID"]],
@@ -260,7 +259,7 @@ if __name__ == "__main__":
     #     one_hot_encoding(ds[1], ds[4], ds[5])
 
     all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
-    depths = [4]
+    depths = [6]
     min_samples_list = [0]
 
     # Run tests
@@ -271,13 +270,12 @@ if __name__ == "__main__":
                 # Cols to deleted was already deleted
                 test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/cart", gini_factors=[1], gamma_factors=[None])
+                             results_folder="results/cart", gamma_factors=[None])
                 test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                              col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/algo_gini", gini_factors=[0.97],
-                             gamma_factors=[0.9])
-                # test1.run(debug=True)
-                # test2.run(debug=True)
+                             results_folder="results/algo_gini", gamma_factors=[2 / 3])
+                test1.run(debug=False)
+                test2.run(debug=False)
 
     datasets_by_name = {
         ds[0]: {
@@ -286,16 +284,16 @@ if __name__ == "__main__":
         }
         for ds in datasets}
 
-    # save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
-    # save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
     #                           load_from="json")
     # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-    #                           load_from="json", ds_by_name=datasets_by_name)
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle_pruned",
-                              load_from="pickle", ds_by_name=datasets_by_name)
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle_pruned",
-                              load_from="pickle", ds_by_name=datasets_by_name)
+    #                           load_from="json")
+    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle_pruned",
+    #                           load_from="pickle", ds_by_name=datasets_by_name)
+    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle_pruned",
+    #                           load_from="pickle", ds_by_name=datasets_by_name)
 
+    save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
+    save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

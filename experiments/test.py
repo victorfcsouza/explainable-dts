@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
+from time import perf_counter
 
 from algorithms.algo_with_gini import AlgoWithGini
 from algorithms.cart import Cart
@@ -25,11 +26,12 @@ class MetricType(Enum):
     unbalanced_splits = "unbalanced_splits"
     nodes = "nodes"
     features = "features"
+    execution_time = "execution_time"
 
 
 class Metrics:
     def __init__(self, gini_factor, gamma_factor, train_accuracy, test_accuracy, max_depth, max_depth_redundant, wad,
-                 waes, unbalanced_splits, nodes, features):
+                 waes, unbalanced_splits, nodes, features, execution_time):
         self.gini_factor = gini_factor
         self.gamma_factor = gamma_factor
         self.train_accuracy = train_accuracy
@@ -41,6 +43,7 @@ class Metrics:
         self.waes = waes
         self.nodes = nodes
         self.features = features
+        self.execution_time = execution_time
 
     def get_metrics(self):
         return {
@@ -54,7 +57,8 @@ class Metrics:
             MetricType.waes: round(self.waes, 3),
             MetricType.unbalanced_splits: self.unbalanced_splits,
             MetricType.nodes: self.nodes,
-            MetricType.features: self.features
+            MetricType.features: self.features,
+            MetricType.execution_time: self.execution_time
         }
 
     @staticmethod
@@ -69,7 +73,8 @@ class Metrics:
                 MetricType.wad.value,
                 MetricType.waes.value,
                 MetricType.nodes.value,
-                MetricType.features.value]
+                MetricType.features.value,
+                MetricType.execution_time]
 
 
 class ResultJson:
@@ -247,11 +252,13 @@ class Test:
         results = []
         for gini_factor in self.gini_factors:
             for gamma_factor in self.gamma_factors:
+                initial_time = perf_counter()
                 dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
                 score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=gini_factor,
                                                        gamma_factor=gamma_factor)
                 unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, features = \
                     dt.get_explainability_metrics()
+                final_time = perf_counter()
                 if debug:
                     # dt.tree_.debug(
                     #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
@@ -266,17 +273,12 @@ class Test:
                 print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
                       f"waes: {waes}, nodes: {nodes}, features: {features}")
                 print("----------------------------")
-                metrics = Metrics(gini_factor=gini_factor,
-                                  gamma_factor=gamma_factor,
-                                  train_accuracy=score_train,
-                                  test_accuracy=score_test,
-                                  max_depth=max_depth,
-                                  max_depth_redundant=max_depth_redundant,
-                                  wad=wad,
-                                  waes=waes,
-                                  unbalanced_splits=unbalanced_splits,
-                                  nodes=nodes,
-                                  features=features)
+                metrics = Metrics(gini_factor=gini_factor, gamma_factor=gamma_factor,
+                                  train_accuracy=score_train, test_accuracy=score_test,
+                                  max_depth=max_depth, max_depth_redundant=max_depth_redundant,
+                                  wad=wad, waes=waes,
+                                  unbalanced_splits=unbalanced_splits, nodes=nodes,
+                                  features=features, execution_time=round(final_time - initial_time, 4))
 
                 results.append(metrics.get_metrics())
 
