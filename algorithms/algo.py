@@ -290,7 +290,7 @@ class Algo(DefaultClassifier):
                                                  father_feature=node.feature_index)
         return node
 
-    def fit(self, X, y, modified_factor=1, gamma_factor=2 / 3):
+    def fit(self, X, y, modified_factor=1, gamma_factor=2 / 3, pruning=False):
         """Build decision tree classifier."""
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
         self.n_samples = len(y)
@@ -299,3 +299,5 @@ class Algo(DefaultClassifier):
         self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
                                      modified_factor=modified_factor, gamma_factor=gamma_factor,
                                      calculate_gini=False)
+        if pruning:
+            self.tree_ = tree.Node.get_pruned_tree(self.tree_)

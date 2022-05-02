@@ -11,7 +11,7 @@ class DefaultClassifier:
         self.n_features_ = None
         self.tree_: tree = None
 
-    def fit(self, X, y, modified_factor=1, gamma_factor=None):
+    def fit(self, X, y, modified_factor=1, gamma_factor=None, pruning=False):
         """Build decision tree classifier."""
         self.n_classes_ = len(set(y))  # classes are assumed to go from 0 to n-1
         self.n_samples = len(y)
@@ -19,6 +19,8 @@ class DefaultClassifier:
         feature_index_occurrences = [0] * self.n_features_
         self.tree_ = self._grow_tree(X, y, feature_index_occurrences=feature_index_occurrences,
                                      modified_factor=modified_factor, gamma_factor=gamma_factor)
+        if pruning:
+            self.tree_ = tree.Node.get_pruned_tree(self.tree_)
 
     def predict(self, X):
         """Predict class for X."""
@@ -55,8 +57,8 @@ class DefaultClassifier:
                 node = node.right
         return node.predicted_class
 
-    def get_score(self, X_train, y_train, X_test, y_test, modified_factor=1, gamma_factor=None):
-        self.fit(X_train, y_train, modified_factor=modified_factor, gamma_factor=gamma_factor)
+    def get_score(self, X_train, y_train, X_test, y_test, modified_factor=1, gamma_factor=None, pruning=False):
+        self.fit(X_train, y_train, modified_factor=modified_factor, gamma_factor=gamma_factor, pruning=pruning)
         return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
 
     def get_score_without_fit(self, X_train, y_train, X_test, y_test):

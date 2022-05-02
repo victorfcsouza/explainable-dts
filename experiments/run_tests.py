@@ -129,6 +129,8 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             with open(result_dir + "/" + file) as json_file:
                 file_data = json.load(json_file)
                 for result in file_data['results']:
+                    if MetricType.execution_time.value not in result:
+                        break
                     row = [file_data[info_header] for info_header in test_info_header]
                     row += [result[metric] for metric in metrics_header]
                     rows.append(row)
@@ -261,21 +263,23 @@ if __name__ == "__main__":
     all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
     depths = [6]
     min_samples_list = [0]
+    iterations = range(1, 11)
 
     # Run tests
-    for ds in all_datasets:
-        for depth in depths:
-            for min_samples_stop in min_samples_list:
-                # algo_name, path, col_class_name, categorical_cols, cols_to_delete
-                # Cols to deleted was already deleted
-                test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
-                             col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/cart", gamma_factors=[None])
-                test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
-                             col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                             results_folder="results/algo_gini", gamma_factors=[2 / 3])
-                test1.run(debug=False)
-                test2.run(debug=False)
+    for it in iterations:
+        for ds in all_datasets:
+            for depth in depths:
+                for min_samples_stop in min_samples_list:
+                    # algo_name, path, col_class_name, categorical_cols, cols_to_delete
+                    # Cols to deleted was already deleted
+                    test1 = Test(classifier=Cart, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
+                                 col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
+                                 results_folder="results/cart", gamma_factors=[None], gini_factors=[1])
+                    test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
+                                 col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
+                                 results_folder="results/algo_gini", gamma_factors=[2/3])
+                    # test1.run(debug=False, iteration=it, pruning=True)
+                    test2.run(debug=False, iteration=it, pruning=True)
 
     datasets_by_name = {
         ds[0]: {
@@ -284,16 +288,17 @@ if __name__ == "__main__":
         }
         for ds in datasets}
 
-    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
-    #                           load_from="json")
-    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-    #                           load_from="json")
+    # save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
+    # save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
+
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
+                              load_from="json")
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+                              load_from="json")
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle_pruned",
     #                           load_from="pickle", ds_by_name=datasets_by_name)
     # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle_pruned",
     #                           load_from="pickle", ds_by_name=datasets_by_name)
 
-    save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
-    save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)

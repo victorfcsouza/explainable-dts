@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
-from time import perf_counter
+from time import perf_counter_ns
 
 from algorithms.algo_with_gini import AlgoWithGini
 from algorithms.cart import Cart
@@ -74,7 +74,7 @@ class Metrics:
                 MetricType.waes.value,
                 MetricType.nodes.value,
                 MetricType.features.value,
-                MetricType.execution_time]
+                MetricType.execution_time.value]
 
 
 class ResultJson:
@@ -122,14 +122,17 @@ class Test:
         self.results = None  # Need to update via run()
 
     def _get_filename(self, extension: str, gini_factor: float = None, gamma_factor: float = None,
-                      sub_folder=None) -> str:
+                      sub_folder=None, iteration=None) -> str:
         folder = f"{self.results_folder}/{sub_folder}" if sub_folder else f"{self.results_folder}"
         filename = f"{folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
                    f"_samples_{self.min_samples_stop}"
         if gini_factor:
             filename += f"_gini-factor_{gini_factor}"
         if gamma_factor:
-            filename += f"_gamma_{gamma_factor}"
+            filename += f"_gamma_{round(gamma_factor, 2)}"
+        if iteration:
+            filename += f"_iteration_{iteration}"
+
         filename += f".{extension}"
         return filename
 
@@ -162,8 +165,8 @@ class Test:
         filename = self._get_filename("png", sub_folder="img")
         plt.savefig(filename)
 
-    def _store_results(self):
-        filename: str = self._get_filename("json", sub_folder="json")
+    def _store_results(self, iteration=0):
+        filename: str = self._get_filename("json", sub_folder="json", iteration=iteration)
         result_json = {
             'dataset': self.dataset_name,
             'algorithm': self.classifier.__name__,
@@ -234,10 +237,12 @@ class Test:
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state, train_size=train_size)
         return X_train, X_test, y_train, y_test
 
-    def run(self, store_results=True, plot_graphic=False, debug=False):
+    def run(self, store_results=True, plot_graphic=False, debug=False, iteration=0, pruning=True):
         print("\n#######################################################################")
         print(f"### Running tests for {self.dataset_name} with {self.classifier.__name__}, "
               f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}")
+        if iteration:
+            print("Iteration", iteration)
 
         # Read CSV
         X, y = self.parse_dataset()
@@ -247,18 +252,20 @@ class Test:
         self.n_classes = len(set(y))
 
         # Training Models
-        X_train, X_test, y_train, y_test = self.split_train_test(X, y)
+        X_train, X_test, y_train, y_test = self.split_train_test(X, y, random_state=iteration)
 
         results = []
         for gini_factor in self.gini_factors:
             for gamma_factor in self.gamma_factors:
-                initial_time = perf_counter()
+                gamma_factor = round(gamma_factor, 2) if gamma_factor else gamma_factor
+                initial_time = perf_counter_ns()
                 dt = self.classifier(max_depth=self.max_depth_stop, min_samples_stop=self.min_samples_stop)
                 score_train, score_test = dt.get_score(X_train, y_train, X_test, y_test, modified_factor=gini_factor,
-                                                       gamma_factor=gamma_factor)
+                                                       gamma_factor=gamma_factor, pruning=pruning)
                 unbalanced_splits, max_depth, max_depth_redundant, wad, waes, nodes, features = \
                     dt.get_explainability_metrics()
-                final_time = perf_counter()
+                final_time = perf_counter_ns()
+                execution_time = round((final_time - initial_time) / 1e9, 4)
                 if debug:
                     # dt.tree_.debug(
                     #     feature_names=["Attribute {}".format(i) for i in range(len(X_train))],
@@ -266,26 +273,28 @@ class Test:
                     #     show_details=True
                     # )
                     tree_img_file = self._get_filename(extension="png", gini_factor=gini_factor,
-                                                       gamma_factor=gamma_factor, sub_folder="img")
+                                                       gamma_factor=gamma_factor, sub_folder="img",
+                                                       iteration=iteration)
                     dt.tree_.debug_pydot(tree_img_file)
                 print(f"\nTrain/test accuracy for gini factor {gini_factor} and gamma {gamma_factor}: "
                       f"{score_train}, {score_test}")
                 print(f"max_depth: {max_depth}, max_depth_redundant: {max_depth_redundant}, wad: {wad}, "
-                      f"waes: {waes}, nodes: {nodes}, features: {features}")
+                      f"waes: {waes}, nodes: {nodes}, features: {features}, execution time: {execution_time}")
                 print("----------------------------")
                 metrics = Metrics(gini_factor=gini_factor, gamma_factor=gamma_factor,
                                   train_accuracy=score_train, test_accuracy=score_test,
                                   max_depth=max_depth, max_depth_redundant=max_depth_redundant,
                                   wad=wad, waes=waes,
                                   unbalanced_splits=unbalanced_splits, nodes=nodes,
-                                  features=features, execution_time=round(final_time - initial_time, 4))
+                                  features=features, execution_time=execution_time)
 
                 results.append(metrics.get_metrics())
 
                 # Save Tree objects
                 if store_results:
                     pickle_name = self._get_filename(extension="pickle", gini_factor=gini_factor,
-                                                     gamma_factor=gamma_factor, sub_folder="pickle")
+                                                     gamma_factor=gamma_factor, sub_folder="pickle",
+                                                     iteration=iteration)
                     create_dir(pickle_name)
                     with open(pickle_name, 'wb') as handle:
                         pickle.dump(dt.tree_, handle)
@@ -294,7 +303,7 @@ class Test:
         if plot_graphic:
             self._plot_graphic()
         if store_results:
-            self._store_results()
+            self._store_results(iteration=iteration)
 
         print(f"\n### Ended tests for {self.dataset_name} with with {self.classifier.__name__}, "
               f"max_depth {self.max_depth_stop}, min_samples_stop {self.min_samples_stop}\n")

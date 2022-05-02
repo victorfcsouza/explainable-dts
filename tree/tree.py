@@ -148,19 +148,24 @@ class Node:
 
         def get_pydot_node(node):
             node_name = get_node_name(node)
-            # fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
-            fill_color = "gold" if not node.left and not node.right else "none"
+            fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
+            # fill_color = "gold" if not node.left and not node.right else "none"
 
             threshold = str(round(node.threshold, 3) + 0) if node.left or node.right else None
             # Scientific values for small numbers
             if node.threshold is not None and abs(node.threshold) < 0.001:
-                threshold = "{:.2e}".format(node.threshold)
-            tex_label = f"$D{node.feature_index} \\leq " + threshold + "$" if node.left or node.right \
-                else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
-                     "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
-
+                # threshold = "{:.2e}".format(node.threshold).replace("e-0", "e-")
+                threshold = "0.00"
+            elif node.threshold is not None:
+                threshold = str(round(node.threshold, 2))
+            if node.left or node.right:
+                tex_label = f"$D{node.feature_index} \\leq " + threshold + "$" if node.left or node.right \
+                    else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
+                         "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
+            else:
+                tex_label = " "
             return pydot.Node(node_name, shape="box", fillcolor=fill_color, style="filled", texlbl=tex_label,
-                              align="left")
+                              align="left", width=1.0)
 
         def visit_node(pydot_tree: pydot.Dot, node: Node, parent_node_name: str = "none"):
             node_name = get_node_name(node)
