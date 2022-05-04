@@ -59,16 +59,16 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
 
 
 if __name__ == "__main__":
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
-                         "test_accuracy", "Test Accuracy")
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
-                         "wad", "WAD")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
+    #                      "test_accuracy", "Test Accuracy")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
+    #                      "wad", "WAD")
     plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
                          "waes", "WAES")
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
-                         "nodes", "Nodes")
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
-                         "features", "Features")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
+    #                      "nodes", "Nodes")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
+    #                      "features", "Features")
 
     # plot_trees(
     #     pickle_filename="results/algo_gini/pickle_pruned/sensorless_AlgoWithGini_depth_4_samples_0_gini-factor_0.97_gamma_0.9.pickle",

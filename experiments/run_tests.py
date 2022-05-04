@@ -149,12 +149,15 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             tree_obj = clf_obj.tree_
             num_features = len(tree_obj.feature_index_occurrences)
             clf_name = clf_obj.__class__.__name__
+            pickle_info = pickle_filename.replace(".pickle", "").split("_")
+            iteration_index = pickle_info.index("iteration")
+            iteration = int(pickle_info[iteration_index+1])
             print(f"### Generating results for {test.dataset_name} with {clf_name}, "
                   f"max_depth {test.max_depth_stop}, min_samples_stop {test.min_samples_stop}, "
-                  f"gini factor {test.gini_factors[0]} and gamma {test.gamma_factors[0]}")
+                  f"gini factor {test.gini_factors[0]}, gamma {test.gamma_factors[0]} and iteration {iteration}")
 
             X, y = test.parse_dataset()
-            X_train, X_test, y_train, y_test = test.split_train_test(X, y)
+            X_train, X_test, y_train, y_test = test.split_train_test(X, y, random_state=iteration)
             score_train, score_test = clf_obj.get_score_without_fit(X_train, y_train, X_test, y_test)
             metrics = tree_obj.get_explainability_metrics(num_features)
             row = [test.dataset_name, clf_name, test.max_depth_stop, test.min_samples_stop, test.gini_factors[0],
@@ -279,7 +282,7 @@ if __name__ == "__main__":
                                  col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                                  results_folder="results/algo_gini", gamma_factors=[2/3])
                     # test1.run(debug=False, iteration=it, pruning=True)
-                    test2.run(debug=False, iteration=it, pruning=True)
+                    # test2.run(debug=False, iteration=it, pruning=True)
 
     datasets_by_name = {
         ds[0]: {
@@ -291,14 +294,14 @@ if __name__ == "__main__":
     # save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
     # save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
 
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
-                              load_from="json")
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-                              load_from="json")
-    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle_pruned",
-    #                           load_from="pickle", ds_by_name=datasets_by_name)
-    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle_pruned",
-    #                           load_from="pickle", ds_by_name=datasets_by_name)
+    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
+    #                           load_from="json")
+    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+    #                           load_from="json")
+    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
+                              load_from="pickle", ds_by_name=datasets_by_name)
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/pickle",
+                              load_from="pickle", ds_by_name=datasets_by_name)
 
     # plot_opt_table(bins=False)
     # plot_opt_table(bins=True)
