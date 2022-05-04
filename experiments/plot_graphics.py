@@ -34,7 +34,7 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     plt.plot(x, average, color="blue")
     # plt.errorbar(x, average, yerr=err, color="blue")
     plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
-    plt.xlabel("Gini Factor")
+    plt.xlabel("Explanation Size Factor")
     plt.ylabel(y_label)
     plt.margins(x=0.05, y=0.05)
     plt.savefig(output_file, bbox_inches='tight')
