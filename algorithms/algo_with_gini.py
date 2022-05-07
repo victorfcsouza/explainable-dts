@@ -8,15 +8,16 @@ class AlgoWithGini(Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor,
+                            impurity_criterion="gini"):
         m = y.size  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
         pairs_right = node_pairs
-        t_best_gini = None
-        best_gini = math.inf
+        t_best_impurity = None
+        best_impurity = math.inf
         all_thresholds = []
 
         # For the 2 case split
@@ -38,25 +39,37 @@ class AlgoWithGini(Algo):
             prod_left = i * pairs_left
             prod_right = (m - i) * pairs_right
             cost = max(prod_left, prod_right)
-            gini_left = 1.0 - sum(
-                (classes_left[x] / i) ** 2 for x in range(self.n_classes_)
-            )
-            gini_right = 1.0 - sum(
-                (classes_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
-            )
-            gini = (i * gini_left + (m - i) * gini_right) / m
+            if impurity_criterion == "gini":
+                impurity_left = 1.0 - sum(
+                    (classes_left[x] / i) ** 2 for x in range(self.n_classes_)
+                )
+                impurity_right = 1.0 - sum(
+                    (classes_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
+                )
+                impurity = (i * impurity_left + (m - i) * impurity_right) / m
+            else:
+                # Entropy
+                impurity_left = - sum(
+                    (classes_left[x] / i) * math.log2(classes_left[x] / i) for x in range(self.n_classes_)
+                    if classes_left[x]
+                )
+                impurity_right = - sum(
+                    (classes_right[x] / (m - i)) * math.log2(classes_right[x] / (m - i)) for x in range(self.n_classes_)
+                    if classes_right[x]
+                )
+                impurity = (i * impurity_left + (m - i) * impurity_right) / m
 
             if t_star is None and prod_left > gamma_factor * node_product:
                 t_star = threshold
-            if gini < best_gini and cost <= gamma_factor * node_product:
-                best_gini = gini
-                t_best_gini = threshold
+            if impurity < best_impurity and cost <= gamma_factor * node_product:
+                best_impurity = impurity
+                t_best_impurity = threshold
 
         cost_star = math.inf if t_star is None else cost_star
-        return t_best_gini, best_gini, t_star, cost_star, all_thresholds
+        return t_best_impurity, best_impurity, t_star, cost_star, all_thresholds
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2/3,
-                    father_feature=None):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2 / 3,
+                    father_feature=None, impurity_criterion="gini"):
         """
         Find the next split for a node.
         Returns:
@@ -76,14 +89,20 @@ class AlgoWithGini(Algo):
         classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        gini_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
-        gini_modified_parent = gini_parent * modified_factor if \
-            father_feature and feature_index_occurrences[father_feature] else gini_parent
-        best_modified_gini = math.inf
+        if impurity_criterion == "gini":
+            impurity_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
+        elif impurity_criterion == "entropy":
+            impurity_parent = - sum((n / m) * math.log2(n / m) for n in classes_parent if n)
+        else:
+            raise ValueError("Impurity criterion can only be Gini or Entropy")
+
+        impurity_modified_parent = impurity_parent * modified_factor if \
+            father_feature and feature_index_occurrences[father_feature] else impurity_parent
+        best_modified_impurity = math.inf
 
         # variables for the 2-step partition
-        a_min_gini = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
-        t_min_gini = None  # threshold relative to previous attribute
+        a_min_impurity = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
+        t_min_impurity = None  # threshold relative to previous attribute
 
         # variables for the 3-step partition
         a_star = None
@@ -93,23 +112,24 @@ class AlgoWithGini(Algo):
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_gini_balanced, gini_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
+            threshold_a_impurity_balanced, impurity_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
                 self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor)
-            modified_gini_a = gini_a_balanced * modified_factor if feature_index_occurrences[a] else gini_a_balanced
+            modified_impurity_a = impurity_a_balanced * modified_factor if feature_index_occurrences[a] else \
+                impurity_a_balanced
 
             all_thresholds.append(thresholds_a)
             if cost_a_star < cost_attr_min:
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if threshold_a_gini_balanced is not None and modified_gini_a < best_modified_gini:
-                a_min_gini = a
-                t_min_gini = threshold_a_gini_balanced
-                best_modified_gini = modified_gini_a
+            if threshold_a_impurity_balanced is not None and modified_impurity_a < best_modified_impurity:
+                a_min_impurity = a
+                t_min_impurity = threshold_a_impurity_balanced
+                best_modified_impurity = modified_impurity_a
 
-        if a_min_gini is not None:
-            if best_modified_gini < gini_modified_parent:
-                return a_min_gini, t_min_gini, None, True
+        if a_min_impurity is not None:
+            if best_modified_impurity < impurity_modified_parent:
+                return a_min_impurity, t_min_impurity, None, True
             else:
                 return None, None, None, None
 

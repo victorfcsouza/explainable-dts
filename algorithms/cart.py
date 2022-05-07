@@ -1,4 +1,6 @@
 """Implementation of the CART algorithm to train decision tree classifiers."""
+import math
+
 import numpy as np
 
 from algorithms.default_algorithm import DefaultClassifier
@@ -10,7 +12,7 @@ class Cart(DefaultClassifier):
         super().__init__(max_depth, min_samples_stop)
 
     def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1,
-                    father_feature=None):
+                    father_feature=None, impurity_metric="gini"):
         """Find the best split for a node.
 
         "Best" means that the average impurity of the two children, weighted by their
@@ -35,9 +37,15 @@ class Cart(DefaultClassifier):
         num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        gini_parent = 1.0 - sum((n / m) ** 2 for n in num_parent)  # Cart original
-        best_modified_gini = gini_parent * modified_factor if \
-            father_feature and feature_index_occurrences[father_feature] else gini_parent
+        if impurity_metric == "gini":
+            impurity_parent = 1.0 - sum((n / m) ** 2 for n in num_parent)  # Cart original
+        elif impurity_metric == "entropy":
+            impurity_parent = - sum((n / m) * math.log2(n / m) for n in num_parent if n)
+        else:
+            raise ValueError("Criterion can only by Gini or entropy!")
+
+        best_modified_impurity = impurity_parent * modified_factor if \
+            father_feature and feature_index_occurrences[father_feature] else impurity_parent
 
         best_idx, best_thr = None, None
 
@@ -56,17 +64,26 @@ class Cart(DefaultClassifier):
                 c = classes[i - 1]
                 num_left[c] += 1
                 num_right[c] -= 1
-                gini_left = 1.0 - sum(
+                if impurity_metric == "gini":
+                    impurity_left = 1.0 - sum(
                     (num_left[x] / i) ** 2 for x in range(self.n_classes_)
-                )
-                gini_right = 1.0 - sum(
-                    (num_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
-                )
+                    )
+                    impurity_right = 1.0 - sum(
+                        (num_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
+                    )
+                else:
+                    impurity_left = - sum(
+                        (num_left[x] / i) * math.log2(num_left[x] / i) for x in range(self.n_classes_)
+                        if num_left[x]
+                    )
+                    impurity_right = - sum(
+                        (num_right[x] / (m - i)) * math.log(num_right[x] / (m - i)) for x in range(self.n_classes_)
+                        if num_right[x]
+                    )
 
-                # The Gini impurity of a split is the weighted average of the Gini
-                # impurity of the children.
-                gini = (i * gini_left + (m - i) * gini_right) / m
-                modified_gini = gini * modified_factor if feature_index_occurrences[idx] else gini
+                # impurity of a split is the weighted average of the impurity of the children.
+                impurity = (i * impurity_left + (m - i) * impurity_right) / m
+                modified_impurity = impurity * modified_factor if feature_index_occurrences[idx] else impurity
 
                 # The following condition is to make sure we don't try to split two
                 # points with identical values for that feature, as it is impossible
@@ -74,8 +91,8 @@ class Cart(DefaultClassifier):
                 if thresholds[i] == thresholds[i - 1]:
                     continue
 
-                if modified_gini < best_modified_gini:
-                    best_modified_gini = modified_gini
+                if modified_impurity < best_modified_impurity:
+                    best_modified_impurity = modified_impurity
                     best_idx = idx
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2  # midpoint
 
