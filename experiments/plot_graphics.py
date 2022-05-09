@@ -12,29 +12,36 @@ from experiments.test import Test
 def plot_factor_graphics(csf_file, output_file, col, y_label):
     data = pd.read_csv(csf_file)
     data_algo = data[data['algorithm'] == 'AlgoWithGini']
-    accuracy_trains_by_factor = defaultdict(list)
+    values_by_factor = defaultdict(list)
     for index, row in data_algo.iterrows():
         factor = row["gini_factor"]
         accuracy = row[col]
-        accuracy_trains_by_factor[factor].append(accuracy)
+        values_by_factor[factor].append(accuracy)
 
     x = []
     average = []
     err = []
-    for factor, value in accuracy_trains_by_factor.items():
+    for factor, value in values_by_factor.items():
         x.append(factor)
         average.append(sum(value) / len(value))
         error_interval = t.interval(0.95, len(value) - 1, loc=np.mean(value), scale=sem(value))
         err.append((error_interval[1] - error_interval[0]) / 2)
 
     f = plt.figure(figsize=(12, 4), dpi=300)
+    plt.rcParams.update({
+        'text.usetex': True,
+        'font.family': 'monospace',
+        'font.size': 16,
+        'font.monospace': ['Computer Modern Typewriter']})
+
     ax = f.add_subplot(111)
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
     plt.plot(x, average, color="blue")
     # plt.errorbar(x, average, yerr=err, color="blue")
     plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
-    plt.xlabel("Explanation Size Factor")
+    plt.xlabel("FactorExpl")
+    plt.ylabel(y_label)
     plt.ylabel(y_label)
     plt.margins(x=0.05, y=0.05)
     plt.savefig(output_file, bbox_inches='tight')
@@ -58,17 +65,52 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
         print("---------")
 
 
+def plot_boxplot(csf_file, output_file):
+    f = plt.figure(figsize=(12, 4), dpi=300)
+    # plt.rcParams.update({
+    #     'text.usetex': True,
+    #     'font.family': 'monospace',
+    #     'font.size': 16,
+    #     'font.monospace': ['Computer Modern Typewriter']})
+
+    data = pd.read_csv(csf_file)
+    data_algo = data[data['algorithm'] == 'AlgoWithGini']
+    data_algo = data_algo[data_algo['gini_factor'] == 0.5]
+    values_by_dataset = defaultdict(list)
+
+    for index, row in data_algo.iterrows():
+        dataset = row['dataset']
+        accuracy = row['test_accuracy']
+        values_by_dataset[dataset].append(accuracy)
+
+    datasets_high = {key: values for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values)}
+    datasets_medium = {key: values for key, values in values_by_dataset.items() if
+                       0.4 < sum(values) / len(values) <= 0.8}
+    datasets_low = {key: values for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.4}
+    datasets = [datasets_high, datasets_medium, datasets_low]
+
+    for count, dataset_list in enumerate(datasets):
+        plt.boxplot(dataset_list.values(), vert=1, labels=dataset_list.keys(), showfliers=False)
+        plt.ylabel("Test Accuracy")
+        output_file = output_file.replace(".jpg", "")
+        plt.savefig(f"{output_file}_{count}.jpg", bbox_inches='tight')
+        plt.close()
+
+
 if __name__ == "__main__":
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
     #                      "test_accuracy", "Test Accuracy")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
     #                      "wad", "WAD")
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
-                         "waes", "WAES")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
+    #                      "waes", "WAES")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
     #                      "nodes", "Nodes")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
     #                      "features", "Features")
+    # plot_factor_graphics("results/test/experiments.csv", "results/test/test.jpg",
+    #                      "waes", "expl\\textsubscript{avg}")
+    plot_boxplot("results/test/experiments.csv", "results/test/boxplot.jpg")
 
     # plot_trees(
     #     pickle_filename="results/algo_gini/pickle_pruned/sensorless_AlgoWithGini_depth_4_samples_0_gini-factor_0.97_gamma_0.9.pickle",
