@@ -2,7 +2,7 @@
 from algorithms.cart import Cart
 
 
-class CartInfoGain(Cart):
+class C45(Cart):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
