@@ -4,6 +4,7 @@ import numpy as np
 from os import listdir
 from os.path import join, isfile
 import pandas as pd
+import seaborn as sns
 from scipy.stats import t, sem
 
 from experiments.test import Test
@@ -66,32 +67,28 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
 
 
 def plot_boxplot(csf_file, output_file):
-    f = plt.figure(figsize=(12, 4), dpi=300)
-    # plt.rcParams.update({
-    #     'text.usetex': True,
-    #     'font.family': 'monospace',
-    #     'font.size': 16,
-    #     'font.monospace': ['Computer Modern Typewriter']})
-
     data = pd.read_csv(csf_file)
-    data_algo = data[data['algorithm'] == 'AlgoWithGini']
-    data_algo = data_algo[data_algo['gini_factor'] == 0.5]
     values_by_dataset = defaultdict(list)
 
-    for index, row in data_algo.iterrows():
+    for index, row in data.iterrows():
         dataset = row['dataset']
         accuracy = row['test_accuracy']
         values_by_dataset[dataset].append(accuracy)
 
-    datasets_high = {key: values for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values)}
-    datasets_medium = {key: values for key, values in values_by_dataset.items() if
-                       0.4 < sum(values) / len(values) <= 0.8}
-    datasets_low = {key: values for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.4}
-    datasets = [datasets_high, datasets_medium, datasets_low]
+    datasets_1 = [key for key, values in values_by_dataset.items() if 0.92 < sum(values) / len(values)]
+    datasets_2 = [key for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values) <= 0.92]
+    datasets_3 = [key for key, values in values_by_dataset.items() if 0.5 < sum(values) / len(values) <= 0.8]
+    datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.5]
+
+    datasets = [datasets_1, datasets_2, datasets_3, datasets_4]
 
     for count, dataset_list in enumerate(datasets):
-        plt.boxplot(dataset_list.values(), vert=1, labels=dataset_list.keys(), showfliers=False)
-        plt.ylabel("Test Accuracy")
+        df = data[data['dataset'].isin(dataset_list)]
+        plt.figure(figsize=(12, 8), dpi=300)
+        sns.boxplot(x="dataset", y="test_accuracy", hue="algorithm", data=df)
+        plt.xticks(rotation='50', ha='right', fontsize=16)
+        plt.ylabel("Test Accuracy", fontsize=16)
+        plt.xlabel("Dataset", fontsize=16)
         output_file = output_file.replace(".jpg", "")
         plt.savefig(f"{output_file}_{count}.jpg", bbox_inches='tight')
         plt.close()
