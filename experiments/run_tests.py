@@ -282,17 +282,17 @@ if __name__ == "__main__":
                                  results_folder="results/cart", gamma_factors=[None], gini_factors=[1])
                     test2 = Test(classifier=AlgoWithGini, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                                  col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                                 results_folder="results/algo_gini", gamma_factors=[2/3], gini_factors=[0.97])
+                                 results_folder="results/algo_gini", gamma_factors=[0.5])
                     test3 = Test(classifier=AlgoInfoGain, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                                  col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
-                                 results_folder="results/algo_info_gain", gamma_factors=[2/3], gini_factors=[0.97])
+                                 results_folder="results/algo_info_gain", gamma_factors=[0.5], gini_factors=[0.97])
                     test4 = Test(classifier=C45, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                                  col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                                  results_folder="results/c45", gamma_factors=[None], gini_factors=[1])
                     # test1.run(debug=False, iteration=it, pruning=True)
                     # test2.run(debug=False, iteration=it, pruning=True)
                     # test3.run(debug=False, iteration=it, pruning=True)
-                    test4.run(debug=False, iteration=it, pruning=True)
+                    # test4.run(debug=False, iteration=it, pruning=True)
 
     datasets_by_name = {
         ds[0]: {
@@ -306,12 +306,13 @@ if __name__ == "__main__":
 
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
     #                           load_from="json")
-    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-    #                           load_from="json")
-    # generate_consolidates_csv("results/consolidated/algo_info_gain_experiments.csv", "results/algo_info_gain/json",
-    #                           load_from="json")
-    generate_consolidates_csv("results/consolidated/c45_experiments.csv", "results/c45/json",
+    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
                               load_from="json")
+    generate_consolidates_csv("results/consolidated/algo_info_gain_experiments.csv", "results/algo_info_gain/json",
+                              load_from="json")
+    # generate_consolidates_csv("results/consolidated/c45_experiments.csv", "results/c45/json",
+    #                           load_from="json")
+
     # Pickle
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
     #                           load_from="pickle", ds_by_name=datasets_by_name)
