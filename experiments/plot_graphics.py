@@ -32,7 +32,7 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     plt.rcParams.update({
         'text.usetex': True,
         'font.family': 'monospace',
-        'font.size': 16,
+        'font.size': 14,
         'font.monospace': ['Computer Modern Typewriter']})
 
     ax = f.add_subplot(111)
@@ -40,10 +40,10 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     ax.yaxis.set_label_position("right")
     plt.plot(x, average, color="blue")
     # plt.errorbar(x, average, yerr=err, color="blue")
-    plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
     plt.xlabel("FactorExpl")
     plt.ylabel(y_label)
-    plt.ylabel(y_label)
+    plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
+    # plt.yticks(np.arange(0.625, 1, 0.025))
     plt.margins(x=0.05, y=0.05)
     plt.savefig(output_file, bbox_inches='tight')
 
@@ -66,28 +66,42 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
         print("---------")
 
 
-def plot_boxplot(csf_file, output_file):
+def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
     data = pd.read_csv(csf_file)
     values_by_dataset = defaultdict(list)
 
+    if use_tex:
+        plt.rcParams.update({
+            'text.usetex': True,
+            # 'font.family': 'monospace',
+            'font.size': 16,
+            # 'font.monospace': ['Computer Modern Typewriter']})
+        })
+
     for index, row in data.iterrows():
         dataset = row['dataset']
-        accuracy = row['test_accuracy']
+        accuracy = row[column]
         values_by_dataset[dataset].append(accuracy)
 
-    datasets_1 = [key for key, values in values_by_dataset.items() if 0.92 < sum(values) / len(values)]
-    datasets_2 = [key for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values) <= 0.92]
-    datasets_3 = [key for key, values in values_by_dataset.items() if 0.5 < sum(values) / len(values) <= 0.8]
-    datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.5]
+    # Accuracy
+    # datasets_1 = [key for key, values in values_by_dataset.items() if 0.92 < sum(values) / len(values)]
+    # datasets_2 = [key for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values) <= 0.92]
+    # datasets_3 = [key for key, values in values_by_dataset.items() if 0.5 < sum(values) / len(values) <= 0.8]
+    # datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.5]
 
-    datasets = [datasets_1, datasets_2, datasets_3, datasets_4]
+    # WAES
+    datasets_1 = [key for key, values in values_by_dataset.items() if 4 < sum(values) / len(values)]
+    datasets_2 = [key for key, values in values_by_dataset.items() if 2 < sum(values) / len(values) <= 4]
+    datasets_3 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 2]
+
+    datasets = [datasets_1, datasets_2, datasets_3]
 
     for count, dataset_list in enumerate(datasets):
         df = data[data['dataset'].isin(dataset_list)]
         plt.figure(figsize=(12, 8), dpi=300)
-        sns.boxplot(x="dataset", y="test_accuracy", hue="algorithm", data=df)
+        sns.boxplot(x="dataset", y=column, hue="algorithm", data=df)
         plt.xticks(rotation='50', ha='right', fontsize=16)
-        plt.ylabel("Test Accuracy", fontsize=16)
+        plt.ylabel(column_label, fontsize=16)
         plt.xlabel("Dataset", fontsize=16)
         output_file = output_file.replace(".jpg", "")
         plt.savefig(f"{output_file}_{count}.jpg", bbox_inches='tight')
@@ -100,14 +114,15 @@ if __name__ == "__main__":
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
     #                      "wad", "WAD")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
-    #                      "waes", "WAES")
+    #                      "waes", "expl\\textsubscript{avg}")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
     #                      "nodes", "Nodes")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
     #                      "features", "Features")
-    # plot_factor_graphics("results/test/experiments.csv", "results/test/test.jpg",
-    #                      "waes", "expl\\textsubscript{avg}")
-    plot_boxplot("results/test/experiments.csv", "results/test/boxplot.jpg")
+
+    plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_waes.jpg", 'waes',
+                 "\\texttt{expl\\textsubscript{avg}}",
+                 use_tex=True)
 
     # plot_trees(
     #     pickle_filename="results/algo_gini/pickle_pruned/sensorless_AlgoWithGini_depth_4_samples_0_gini-factor_0.97_gamma_0.9.pickle",
