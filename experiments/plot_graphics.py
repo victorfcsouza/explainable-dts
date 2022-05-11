@@ -73,9 +73,7 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
     if use_tex:
         plt.rcParams.update({
             'text.usetex': True,
-            # 'font.family': 'monospace',
             'font.size': 16,
-            # 'font.monospace': ['Computer Modern Typewriter']})
         })
 
     for index, row in data.iterrows():
@@ -84,25 +82,29 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
         values_by_dataset[dataset].append(accuracy)
 
     # Accuracy
-    # datasets_1 = [key for key, values in values_by_dataset.items() if 0.92 < sum(values) / len(values)]
-    # datasets_2 = [key for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values) <= 0.92]
-    # datasets_3 = [key for key, values in values_by_dataset.items() if 0.5 < sum(values) / len(values) <= 0.8]
-    # datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.5]
+    if column == 'test_accuracy':
+        datasets_1 = [key for key, values in values_by_dataset.items() if 0.92 < sum(values) / len(values)]
+        datasets_2 = [key for key, values in values_by_dataset.items() if 0.8 < sum(values) / len(values) <= 0.92]
+        datasets_3 = [key for key, values in values_by_dataset.items() if 0.5 < sum(values) / len(values) <= 0.8]
+        datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 0.5]
+        datasets = [datasets_1, datasets_2, datasets_3, datasets_4]
 
-    # WAES
-    datasets_1 = [key for key, values in values_by_dataset.items() if 4 < sum(values) / len(values)]
-    datasets_2 = [key for key, values in values_by_dataset.items() if 2 < sum(values) / len(values) <= 4]
-    datasets_3 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 2]
-
-    datasets = [datasets_1, datasets_2, datasets_3]
+    elif column == 'waes':
+        datasets_1 = [key for key, values in values_by_dataset.items() if 4 < sum(values) / len(values)]
+        datasets_2 = [key for key, values in values_by_dataset.items() if 2 < sum(values) / len(values) <= 4]
+        datasets_3 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 2]
+        datasets = [datasets_1, datasets_2, datasets_3]
+    else:
+        raise NotImplementedError()
 
     for count, dataset_list in enumerate(datasets):
         df = data[data['dataset'].isin(dataset_list)]
         plt.figure(figsize=(12, 8), dpi=300)
-        sns.boxplot(x="dataset", y=column, hue="algorithm", data=df)
+        ax = sns.boxplot(x="dataset", y=column, hue="algorithm", data=df)
         plt.xticks(rotation='50', ha='right', fontsize=16)
+        # plt.xlabel("Dataset", fontsize=16)
+        ax.set(xlabel=None)
         plt.ylabel(column_label, fontsize=16)
-        plt.xlabel("Dataset", fontsize=16)
         output_file = output_file.replace(".jpg", "")
         plt.savefig(f"{output_file}_{count}.jpg", bbox_inches='tight')
         plt.close()
@@ -120,6 +122,8 @@ if __name__ == "__main__":
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
     #                      "features", "Features")
 
+    plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_accuracy.jpg", 'test_accuracy',
+                 "Test Accuracy", use_tex=True)
     plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_waes.jpg", 'waes',
                  "\\texttt{expl\\textsubscript{avg}}",
                  use_tex=True)
