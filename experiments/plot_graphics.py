@@ -43,7 +43,8 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     plt.xlabel("FactorExpl")
     plt.ylabel(y_label)
     plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
-    # plt.yticks(np.arange(0.625, 1, 0.025))
+    plt.yticks(np.arange(0.625, 1, 0.025))
+    ax.set(ylabel=None)
     plt.margins(x=0.05, y=0.05)
     plt.savefig(output_file, bbox_inches='tight')
 
@@ -91,9 +92,10 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
 
     elif column == 'waes':
         datasets_1 = [key for key, values in values_by_dataset.items() if 4 < sum(values) / len(values)]
-        datasets_2 = [key for key, values in values_by_dataset.items() if 2 < sum(values) / len(values) <= 4]
-        datasets_3 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 2]
-        datasets = [datasets_1, datasets_2, datasets_3]
+        datasets_2 = [key for key, values in values_by_dataset.items() if 3.5 < sum(values) / len(values) <= 4]
+        datasets_3 = [key for key, values in values_by_dataset.items() if 2 < sum(values) / len(values) <= 3.5]
+        datasets_4 = [key for key, values in values_by_dataset.items() if sum(values) / len(values) <= 2]
+        datasets = [datasets_1, datasets_2, datasets_3, datasets_4]
     else:
         raise NotImplementedError()
 
@@ -122,8 +124,8 @@ if __name__ == "__main__":
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
     #                      "features", "Features")
 
-    plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_accuracy.jpg", 'test_accuracy',
-                 "Test Accuracy", use_tex=True)
+    # plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_accuracy.jpg", 'test_accuracy',
+    #              "Test Accuracy", use_tex=True)
     plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_waes.jpg", 'waes',
                  "\\texttt{expl\\textsubscript{avg}}",
                  use_tex=True)
