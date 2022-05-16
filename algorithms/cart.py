@@ -77,7 +77,7 @@ class Cart(DefaultClassifier):
                         if num_left[x]
                     )
                     impurity_right = - sum(
-                        (num_right[x] / (m - i)) * math.log(num_right[x] / (m - i)) for x in range(self.n_classes_)
+                        (num_right[x] / (m - i)) * math.log2(num_right[x] / (m - i)) for x in range(self.n_classes_)
                         if num_right[x]
                     )
 
