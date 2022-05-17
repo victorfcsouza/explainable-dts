@@ -108,7 +108,7 @@ def save_pruned_trees(pickle_dir, pruned_dir):
     pickle_files = [f for f in files if 'pickle' in f]
     for pickle_filename in pickle_files:
         print(f"### Punning tree {pickle_filename}")
-        test = Test.load_test_from_pickle(f"{pickle_dir}/{pickle_filename}")
+        test, _ = Test.load_test_from_pickle(f"{pickle_dir}/{pickle_filename}")
         clf_obj = test.clf_obj
         tree_obj: Node = clf_obj.tree_
         pruned_tree = tree_obj.get_pruned_tree()
@@ -144,7 +144,7 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
         pickle_files = sorted(pickle_files)
         rows = []
         for pickle_filename in pickle_files:
-            test = Test.load_test_from_pickle(f"{result_dir}/{pickle_filename}")
+            test, iteration = Test.load_test_from_pickle(f"{result_dir}/{pickle_filename}")
             test.csv_file = ds_by_name[test.dataset_name]['csv']
             test.col_class_name = ds_by_name[test.dataset_name]['col_class']
             clf_obj = test.clf_obj
@@ -152,8 +152,6 @@ def generate_consolidates_csv(csv_file, result_dir, load_from="json", ds_by_name
             num_features = len(tree_obj.feature_index_occurrences)
             clf_name = clf_obj.__class__.__name__
             pickle_info = pickle_filename.replace(".pickle", "").split("_")
-            iteration_index = pickle_info.index("iteration")
-            iteration = int(pickle_info[iteration_index+1])
             print(f"### Generating results for {test.dataset_name} with {clf_name}, "
                   f"max_depth {test.max_depth_stop}, min_samples_stop {test.min_samples_stop}, "
                   f"gini factor {test.gini_factors[0]}, gamma {test.gamma_factors[0]} and iteration {iteration}")

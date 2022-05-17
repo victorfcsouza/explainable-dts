@@ -44,6 +44,8 @@ class Node:
         # Path to node less the redundant nodes
         # Assert that get_explainability_metrics was previously run
         # return sum(abs(x) for x in self.feature_index_occurrences_redundant)
+
+        # Now node explainability is the number of distinct features in path to leaf
         return sum([1 for i in self.feature_index_occurrences if i])
 
     def get_next_feature_occurrences_redundant(self, idx, direction):
@@ -159,12 +161,9 @@ class Node:
                 threshold = "0.00"
             elif node.threshold is not None:
                 threshold = str(round(node.threshold, 2))
-            if node.left or node.right:
-                tex_label = f"$D{node.feature_index} \\leq " + threshold + "$" if node.left or node.right \
-                    else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
-                         "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
-            else:
-                tex_label = " "
+            tex_label = f"$D{node.feature_index} \\leq " + threshold + "$" if node.left or node.right \
+                else "$\\begin{matrix}" + "\\text{Samples: }" + str(node.num_samples) + "\\\\" + \
+                     "\\text{Class: }" + str(node.predicted_class) + "\\end{matrix}$"
             return pydot.Node(node_name, shape="box", fillcolor=fill_color, style="filled", texlbl=tex_label,
                               align="left", width=1.0)
 

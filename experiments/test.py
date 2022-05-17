@@ -322,6 +322,8 @@ class Test:
         min_samples_stop = pickle_info[min_samples_stop_index + 1]
         gini_factor_index = pickle_info.index("gini-factor")
         gini_factor = float(pickle_info[gini_factor_index + 1])
+        iteration_index = pickle_info.index("iteration")
+        iteration = float(pickle_info[iteration_index + 1])
         try:
             gamma_factor_index = pickle_info.index("gamma")
             gamma = float(pickle_info[gamma_factor_index + 1])
@@ -344,4 +346,4 @@ class Test:
                         min_samples_stop=min_samples_stop, gini_factors=[gini_factor], gamma_factors=[gamma],
                         results_folder=results_folder)
             test.clf_obj = clf_obj
-            return test
+            return test, iteration
