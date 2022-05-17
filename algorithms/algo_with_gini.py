@@ -96,8 +96,6 @@ class AlgoWithGini(Algo):
         else:
             raise ValueError("Impurity criterion can only be Gini or Entropy")
 
-        impurity_modified_parent = impurity_parent * modified_factor if \
-            father_feature and feature_index_occurrences[father_feature] else impurity_parent
         best_modified_impurity = math.inf
 
         # variables for the 2-step partition
@@ -109,6 +107,7 @@ class AlgoWithGini(Algo):
         t_star = None  # t* - threshold relative to previous attribute
         cost_attr_min = math.inf
         all_thresholds = []
+        has_balanced = False
 
         # Loop through all features.
         for a in range(self.n_features_):
@@ -118,22 +117,24 @@ class AlgoWithGini(Algo):
                 impurity_a_balanced
 
             all_thresholds.append(thresholds_a)
+            if threshold_a_impurity_balanced:
+                has_balanced = True
             if cost_a_star < cost_attr_min:
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if threshold_a_impurity_balanced is not None and modified_impurity_a < best_modified_impurity:
+            if threshold_a_impurity_balanced is not None and impurity_a_balanced < impurity_parent and \
+                    modified_impurity_a < best_modified_impurity:
                 a_min_impurity = a
                 t_min_impurity = threshold_a_impurity_balanced
                 best_modified_impurity = modified_impurity_a
 
-        if a_min_impurity is not None:
-            if best_modified_impurity < impurity_modified_parent:
-                return a_min_impurity, t_min_impurity, None, True
-            else:
-                return None, None, None, None
+        if has_balanced and a_min_impurity is not None:
+            return a_min_impurity, t_min_impurity, None, True
+        elif has_balanced:
+            return None, None, None, None
 
-        # Else, Perform a 2-step partition
+        # Else, Perform a 2-step partition, there's no balanced partition
         if t_star is not None:
             thresholds = all_thresholds[a_star]
             t_index = thresholds.index(t_star)
