@@ -112,6 +112,9 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
         df = data[data['dataset'].isin(dataset_list)]
         plt.figure(figsize=(12, 8), dpi=300)
         ax = sns.boxplot(x="dataset", y=column, hue="algorithm", data=df)
+        ax.legend(title="Algorithms")
+        ax.legend_.texts[0].set_text("\\texttt{SER-DT}")
+        ax.legend_.texts[1].set_text("\\texttt{CART}")
         plt.xticks(rotation='50', ha='right', fontsize=16)
         # plt.xlabel("Dataset", fontsize=16)
         ax.set(xlabel=None)
@@ -122,10 +125,10 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
 
 
 if __name__ == "__main__":
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
-                         "test_accuracy", "Test Accuracy")
-    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
-                         "waes", "expl\\textsubscript{avg}")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
+    #                      "test_accuracy", "Test Accuracy")
+    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
+    #                      "waes", "expl\\textsubscript{avg}")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
     #                      "wad", "WAD")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
@@ -133,11 +136,11 @@ if __name__ == "__main__":
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
     #                      "features", "Features")
 
-    # plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_accuracy.jpg", 'test_accuracy',
-    #              "Test Accuracy", use_tex=True)
-    # plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_waes.jpg", 'waes',
-    #              "\\texttt{expl\\textsubscript{avg}}",
-    #              use_tex=True)
+    plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_accuracy.jpg", 'test_accuracy',
+                 "Test Accuracy", use_tex=True)
+    plot_boxplot("results/consolidated/experiments.csv", "results/consolidated/boxplot_waes.jpg", 'waes',
+                 "\\texttt{expl\\textsubscript{avg}}",
+                 use_tex=True)
 
     # plot_trees(
     #     pickle_filename="results/algo_gini/pickle_pruned/sensorless_AlgoWithGini_depth_4_samples_0_gini-factor_0.97_gamma_0.9.pickle",
