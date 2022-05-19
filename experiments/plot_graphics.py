@@ -24,27 +24,35 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
     err = []
     for factor, value in values_by_factor.items():
         x.append(factor)
-        average.append(sum(value) / len(value))
+        value_to_add = sum(value) / len(value)
+        if col == 'test_accuracy':
+            value_to_add *= 100
+        average.append(value_to_add)
         error_interval = t.interval(0.95, len(value) - 1, loc=np.mean(value), scale=sem(value))
         err.append((error_interval[1] - error_interval[0]) / 2)
 
     f = plt.figure(figsize=(12, 4), dpi=300)
     plt.rcParams.update({
         'text.usetex': True,
-        'font.family': 'monospace',
-        'font.size': 14,
-        'font.monospace': ['Computer Modern Typewriter']})
+        # 'font.family': 'monospace',
+        'font.size': 20,
+        # 'font.monospace': ['Computer Modern Typewriter']})
+    })
 
     ax = f.add_subplot(111)
     ax.yaxis.tick_right()
-    ax.yaxis.set_label_position("right")
     plt.plot(x, average, color="blue")
+    # ax.yaxis.set_label_position("right")
+    # ax.set(ylabel=None)
     # plt.errorbar(x, average, yerr=err, color="blue")
-    plt.xlabel("FactorExpl")
-    plt.ylabel(y_label)
+    plt.xlabel("\\texttt{FactorExpl}")
+    plt.ylabel(y_label, labelpad=-25)
     plt.xticks(np.arange(min(x), max(x) + 0.1, 0.1))
-    plt.yticks(np.arange(0.625, 1, 0.025))
-    ax.set(ylabel=None)
+    if col == 'test_accuracy':
+        plt.yticks(np.arange(62, 86, 2))
+    else:
+        plt.yticks(np.arange(1, 4, 0.5))
+
     plt.margins(x=0.05, y=0.05)
     plt.savefig(output_file, bbox_inches='tight')
 
@@ -114,12 +122,12 @@ def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
 
 
 if __name__ == "__main__":
-    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
-    #                      "test_accuracy", "Test Accuracy")
+    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/accuracy_factors.jpg",
+                         "test_accuracy", "Test Accuracy")
+    plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
+                         "waes", "expl\\textsubscript{avg}")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/wad_factors.jpg",
     #                      "wad", "WAD")
-    # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/waes_factors.jpg",
-    #                      "waes", "expl\\textsubscript{avg}")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/nodes_factors.jpg",
     #                      "nodes", "Nodes")
     # plot_factor_graphics("results/consolidated/algo_gini_experiments.csv", "results/consolidated/features_factors.jpg",
@@ -134,6 +142,6 @@ if __name__ == "__main__":
     # plot_trees(
     #     pickle_filename="results/algo_gini/pickle_pruned/sensorless_AlgoWithGini_depth_4_samples_0_gini-factor_0.97_gamma_0.9.pickle",
     #     results_dir="results/algo_gini", pruned=True)
-    plot_trees(
-        pickle_filename="results/algo_gini/pickle/banknote_AlgoWithGini_depth_6_samples_0_gini-factor_1_gamma_0.5_iteration_1.pickle",
-        results_dir="results/algo_gini", pruned=True)
+    # plot_trees(
+    #     pickle_filename="results/algo_gini/pickle/banknote_AlgoWithGini_depth_6_samples_0_gini-factor_1_gamma_0.5_iteration_1.pickle",
+    #     results_dir="results/algo_gini", pruned=True)
