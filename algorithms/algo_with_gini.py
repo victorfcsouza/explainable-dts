@@ -8,8 +8,7 @@ class AlgoWithGini(Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor,
-                            impurity_criterion="gini"):
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
         m = y.size  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
@@ -39,25 +38,14 @@ class AlgoWithGini(Algo):
             prod_left = i * pairs_left
             prod_right = (m - i) * pairs_right
             cost = max(prod_left, prod_right)
-            if impurity_criterion == "gini":
-                impurity_left = 1.0 - sum(
-                    (classes_left[x] / i) ** 2 for x in range(self.n_classes_)
-                )
-                impurity_right = 1.0 - sum(
-                    (classes_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
-                )
-                impurity = (i * impurity_left + (m - i) * impurity_right) / m
-            else:
-                # Entropy
-                impurity_left = - sum(
-                    (classes_left[x] / i) * math.log2(classes_left[x] / i) for x in range(self.n_classes_)
-                    if classes_left[x]
-                )
-                impurity_right = - sum(
-                    (classes_right[x] / (m - i)) * math.log2(classes_right[x] / (m - i)) for x in range(self.n_classes_)
-                    if classes_right[x]
-                )
-                impurity = (i * impurity_left + (m - i) * impurity_right) / m
+
+            impurity_left = 1.0 - sum(
+                (classes_left[x] / i) ** 2 for x in range(self.n_classes_)
+            )
+            impurity_right = 1.0 - sum(
+                (classes_right[x] / (m - i)) ** 2 for x in range(self.n_classes_)
+            )
+            impurity = (i * impurity_left + (m - i) * impurity_right) / m
 
             if t_star is None and prod_left > gamma_factor * node_product:
                 t_star = threshold
@@ -68,8 +56,8 @@ class AlgoWithGini(Algo):
         cost_star = math.inf if t_star is None else cost_star
         return t_best_impurity, best_impurity, t_star, cost_star, all_thresholds
 
-    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2 / 3,
-                    father_feature=None, impurity_criterion="gini"):
+    def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=0.5,
+                    father_feature=None):
         """
         Find the next split for a node.
         Returns:
@@ -89,17 +77,12 @@ class AlgoWithGini(Algo):
         classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
         # Gini of current node.
-        if impurity_criterion == "gini":
-            impurity_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
-        elif impurity_criterion == "entropy":
-            impurity_parent = - sum((n / m) * math.log2(n / m) for n in classes_parent if n)
-        else:
-            raise ValueError("Impurity criterion can only be Gini or Entropy")
+        impurity_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
 
         best_modified_impurity = math.inf
 
         # variables for the 2-step partition
-        a_min_impurity = None  # attribute that minimizes Gini and satisfies cost <= 2/3 * node_product
+        a_min_impurity = None  # attribute that minimizes Gini and satisfies cost <= 0.5 * node_product
         t_min_impurity = None  # threshold relative to previous attribute
 
         # variables for the 3-step partition
@@ -117,7 +100,7 @@ class AlgoWithGini(Algo):
                 impurity_a_balanced
 
             all_thresholds.append(thresholds_a)
-            if threshold_a_impurity_balanced:
+            if threshold_a_impurity_balanced is not None:
                 has_balanced = True
             if cost_a_star < cost_attr_min:
                 a_star = a
