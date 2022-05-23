@@ -35,7 +35,8 @@ class C45(Cart):
 
         # Gini of current node.
         impurity_parent = - sum((n / m) * math.log2(n / m) for n in num_parent if n)
-        best_gain_ratio = 0
+        best_impurity = math.inf
+        # best_gain_ratio = 0
 
         best_idx, best_thr = None, None
 
@@ -66,9 +67,8 @@ class C45(Cart):
 
                 # impurity of a split is the weighted average of the impurity of the children.
                 impurity = (i * impurity_left + (m - i) * impurity_right) / m
-                # modified_impurity = impurity * modified_factor if feature_index_occurrences[idx] else impurity
-                split_info = - (i / m) * math.log2(i / m) - ((m - i) / m) * math.log2((m - i) / m)
-                gain_ratio = (impurity_parent - impurity) / split_info
+                # split_info = - (i / m) * math.log2(i / m) - ((m - i) / m) * math.log2((m - i) / m)
+                # gain_ratio = (impurity_parent - impurity) / split_info
 
                 # The following condition is to make sure we don't try to split two
                 # points with identical values for that feature, as it is impossible
@@ -76,8 +76,8 @@ class C45(Cart):
                 if thresholds[i] == thresholds[i - 1]:
                     continue
 
-                if gain_ratio > best_gain_ratio:
-                    best_gain_ratio = gain_ratio
+                if impurity < best_impurity:
+                    best_impurity = impurity
                     best_idx = idx
                     best_thr = (thresholds[i] + thresholds[i - 1]) / 2  # midpoint
 

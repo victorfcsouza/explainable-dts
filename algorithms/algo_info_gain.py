@@ -8,16 +8,17 @@ class AlgoInfoGain(Algo):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
-    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor, impurity_parent):
+    def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
         m = y.size  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
         classes_right = classes_parent.copy()
         pairs_left = 0
         pairs_right = node_pairs
-        best_gain = - math.inf
-        t_best_gain = None
-        split_best_gain = None
+        t_best_impurity = None
+        best_impurity = math.inf
+        # best_gain = - math.inf
+        # split_best_gain = None
         all_thresholds = []
 
         # For the 2 case split
@@ -50,18 +51,20 @@ class AlgoInfoGain(Algo):
                 range(self.n_classes_) if classes_right[x]
             )
             impurity = (i * impurity_left + (m - i) * impurity_right) / m
-            split_info = - (i / m) * math.log2(i / m) - ((m - i) / m) * math.log2((m - i) / m)
-            gain_ratio = (impurity_parent - impurity) / split_info
+            # split_info = - (i / m) * math.log2(i / m) - ((m - i) / m) * math.log2((m - i) / m)
+            # gain_ratio = (impurity_parent - impurity) / split_info
 
             if t_star is None and prod_left > gamma_factor * node_product:
                 t_star = threshold
-            if gain_ratio > best_gain and cost <= gamma_factor * node_product:
-                best_gain = gain_ratio
-                t_best_gain = threshold
-                split_best_gain = split_info
+            if impurity < best_impurity and cost <= gamma_factor * node_product:
+                best_impurity = impurity
+                t_best_impurity = threshold
+                # t_best_gain = threshold
+                # split_best_gain = split_info
 
         cost_star = math.inf if t_star is None else cost_star
-        return t_best_gain, best_gain, split_best_gain, t_star, cost_star, all_thresholds
+        # return t_best_gain, best_gain, split_best_gain, t_star, cost_star, all_thresholds
+        return t_best_impurity, best_impurity, t_star, cost_star, all_thresholds
 
     def _best_split(self, X, y, feature_index_occurrences=None, modified_factor=1, gamma_factor=2 / 3,
                     father_feature=None):
@@ -83,13 +86,17 @@ class AlgoInfoGain(Algo):
         node_product = node_pairs * y.size
         classes_parent = [np.sum(y == c) for c in range(self.n_classes_)]
 
-        # Gini of current node.
+        # Impurity of current node.
         impurity_parent = - sum((n / m) * math.log2(n / m) for n in classes_parent if n)
-        best_gain_ratio = 0
+        best_modified_impurity = math.inf
+        # best_gain_ratio = 0
 
         # variables for the 2-step partition
-        a_max_gain = None  # attribute that maximizes Info Gain Ratio and cost <= 0.5 * node_product
-        t_max_gain = None  # threshold relative to previous attribute
+        # variables for the 2-step partition
+        a_min_impurity = None  # attribute that minimizes Gini and satisfies cost <= 0.5 * node_product
+        t_min_impurity = None  # threshold relative to previous attribute
+        # a_max_gain = None  # attribute that maximizes Info Gain Ratio and cost <= 0.5 * node_product
+        # t_max_gain = None  # threshold relative to previous attribute
 
         # variables for the 3-step partition
         a_star = None
@@ -100,30 +107,26 @@ class AlgoInfoGain(Algo):
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_balanced, gain_a_balanced, split_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
-                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor,
-                                         impurity_parent)
-            modified_gain = -math.inf
-            if threshold_a_balanced is not None:
-                impurity_a = impurity_parent - gain_a_balanced * split_a_balanced
-                modified_impurity_a = impurity_a * modified_factor if feature_index_occurrences[a] \
-                    else impurity_a
-                modified_gain = (impurity_parent - modified_impurity_a) / split_a_balanced
-
+            threshold_a_balanced, impurity_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
+                self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor)
+            modified_impurity_a_balanced = impurity_a_balanced * modified_factor if feature_index_occurrences[a] else \
+                impurity_a_balanced
             all_thresholds.append(thresholds_a)
+
             if threshold_a_balanced is not None:
                 has_balanced = True
             if cost_a_star < cost_attr_min:
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if threshold_a_balanced is not None and modified_gain > best_gain_ratio:
-                a_max_gain = a
-                t_max_gain = threshold_a_balanced
-                best_gain_ratio = modified_gain
+            if threshold_a_balanced is not None and impurity_a_balanced < impurity_parent and \
+                    modified_impurity_a_balanced < best_modified_impurity:
+                a_min_impurity = a
+                t_min_impurity = threshold_a_balanced
+                best_modified_impurity = modified_impurity_a_balanced
 
-        if has_balanced and a_max_gain is not None:
-            return a_max_gain, t_max_gain, None, True
+        if has_balanced and a_min_impurity is not None:
+            return a_min_impurity, t_min_impurity, None, True
         elif has_balanced:
             return None, None, None, None
 

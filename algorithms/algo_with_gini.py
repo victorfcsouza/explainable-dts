@@ -78,7 +78,6 @@ class AlgoWithGini(Algo):
 
         # Gini of current node.
         impurity_parent = 1.0 - sum((n / m) ** 2 for n in classes_parent)
-
         best_modified_impurity = math.inf
 
         # variables for the 2-step partition
@@ -94,23 +93,23 @@ class AlgoWithGini(Algo):
 
         # Loop through all features.
         for a in range(self.n_features_):
-            threshold_a_impurity_balanced, impurity_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
+            threshold_a_balanced, impurity_a_balanced, threshold_a_star, cost_a_star, thresholds_a = \
                 self._get_best_threshold(X, y, a, classes_parent, node_pairs, node_product, gamma_factor)
-            modified_impurity_a = impurity_a_balanced * modified_factor if feature_index_occurrences[a] else \
+            modified_impurity_a_balanced = impurity_a_balanced * modified_factor if feature_index_occurrences[a] else \
                 impurity_a_balanced
 
             all_thresholds.append(thresholds_a)
-            if threshold_a_impurity_balanced is not None:
+            if threshold_a_balanced is not None:
                 has_balanced = True
             if cost_a_star < cost_attr_min:
                 a_star = a
                 t_star = threshold_a_star
                 cost_attr_min = cost_a_star
-            if threshold_a_impurity_balanced is not None and impurity_a_balanced < impurity_parent and \
-                    modified_impurity_a < best_modified_impurity:
+            if threshold_a_balanced is not None and impurity_a_balanced < impurity_parent and \
+                    modified_impurity_a_balanced < best_modified_impurity:
                 a_min_impurity = a
-                t_min_impurity = threshold_a_impurity_balanced
-                best_modified_impurity = modified_impurity_a
+                t_min_impurity = threshold_a_balanced
+                best_modified_impurity = modified_impurity_a_balanced
 
         if has_balanced and a_min_impurity is not None:
             return a_min_impurity, t_min_impurity, None, True
