@@ -101,7 +101,7 @@ class ResultJson:
 
 
 class Test:
-    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop: int,
+    def __init__(self, classifier, dataset_name: str, csv_file: str, max_depth_stop,
                  col_class_name: str, cols_to_delete: list = None, min_samples_stop: int = 0,
                  gini_factors=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96,
                                0.97, 0.98, 0.99, 1), gamma_factors=(0.5, 0.6, 0.7, 0.8, 0.9), results_folder="results"):
