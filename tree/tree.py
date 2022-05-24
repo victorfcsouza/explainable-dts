@@ -151,8 +151,8 @@ class Node:
 
         def get_pydot_node(node):
             node_name = get_node_name(node)
-            fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
-            # fill_color = "gold" if not node.left and not node.right else "none"
+            # fill_color = "none" if not node.left and not node.right else COLOR_LIST[node.feature_index]
+            fill_color = "gold" if not node.left and not node.right else "none"
 
             threshold = str(round(node.threshold, 3) + 0) if node.left or node.right else None
             # Scientific values for small numbers
