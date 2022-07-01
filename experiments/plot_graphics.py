@@ -1,3 +1,7 @@
+"""
+    Auxiliary function to plot graphics
+"""
+
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +15,9 @@ from experiments.test import Test
 
 
 def plot_factor_graphics(csf_file, output_file, col, y_label):
+    """
+        Plot graphic for datasets with many factors
+    """
     data = pd.read_csv(csf_file)
     data_algo = data[data['algorithm'] == 'AlgoWithGini']
     values_by_factor = defaultdict(list)
@@ -58,6 +65,9 @@ def plot_factor_graphics(csf_file, output_file, col, y_label):
 
 
 def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False):
+    """
+        Plot trees in folder specified
+    """
     if pickle_filename:
         pickle_files = [pickle_filename]
     else:
@@ -77,6 +87,9 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
 
 
 def plot_boxplot(csf_file, output_file, column, column_label, use_tex=False):
+    """
+        Plot boxplot graphics
+    """
     data = pd.read_csv(csf_file)
     values_by_dataset = defaultdict(list)
 

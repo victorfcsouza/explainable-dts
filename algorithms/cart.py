@@ -1,4 +1,7 @@
-"""Implementation of the CART algorithm to train decision tree classifiers."""
+"""
+    Implementation of the CART algorithm to train decision tree classifiers.
+"""
+
 import numpy as np
 
 from algorithms.default_algorithm import DefaultClassifier

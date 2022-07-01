@@ -1,4 +1,7 @@
-"""Implementation of the CART algorithm to train decision tree classifiers."""
+"""
+    Implementation of the C4.5 algorithm to train decision tree classifiers.
+"""
+
 import math
 import numpy as np
 

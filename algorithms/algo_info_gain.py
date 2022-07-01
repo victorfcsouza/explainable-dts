@@ -1,3 +1,6 @@
+"""
+    SER-DT Algorithm but considering Information Gain as impurity measure
+"""
 import math
 import numpy as np
 
@@ -9,6 +12,9 @@ class AlgoInfoGain(Algo):
         super().__init__(max_depth, min_samples_stop)
 
     def _get_best_threshold(self, X, y, a, classes_parent, node_pairs, node_product, gamma_factor):
+        """
+            Get the best threshold given an attribute.
+        """
         m = y.size  # tirar
         thresholds, classes_thr = zip(*sorted(zip(X[:, a], y)))
         classes_left = [0] * self.n_classes_
@@ -91,7 +97,6 @@ class AlgoInfoGain(Algo):
         best_modified_impurity = math.inf
         # best_gain_ratio = 0
 
-        # variables for the 2-step partition
         # variables for the 2-step partition
         a_min_impurity = None  # attribute that minimizes Gini and satisfies cost <= 0.5 * node_product
         t_min_impurity = None  # threshold relative to previous attribute
