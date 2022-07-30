@@ -16,6 +16,7 @@ from algorithms.cart import Cart
 from algorithms.algo_with_gini import AlgoWithGini
 from algorithms.algo_info_gain import AlgoInfoGain
 from algorithms.c45 import C45
+from algorithms.ec2 import EC2
 from tree.tree import Node
 from utils.file_utils import create_dir
 
@@ -283,9 +284,9 @@ if __name__ == "__main__":
     #     one_hot_encoding(ds[1], ds[4], ds[5])
 
     all_datasets = sorted(datasets, key=lambda x: (x[0], x[2]))
-    depths = [4, 5]
+    depths = [6]
     min_samples_list = [0]
-    iterations = range(1, 11)
+    iterations = range(4, 11)
 
     # Run tests
     for it in iterations:
@@ -306,10 +307,15 @@ if __name__ == "__main__":
                     test4 = Test(classifier=C45, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
                                  col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
                                  results_folder="results/c45", gamma_factors=[None], gini_factors=[1])
-                    test1.run(debug=True, iteration=it, pruning=True)
-                    test2.run(debug=True, iteration=it, pruning=True)
-                    test3.run(debug=False, iteration=it, pruning=True)
-                    test4.run(debug=False, iteration=it, pruning=True)
+                    test5 = Test(classifier=EC2, dataset_name=ds[0], csv_file=ds[1], max_depth_stop=depth,
+                                 col_class_name=ds[2], cols_to_delete=[], min_samples_stop=min_samples_stop,
+                                 results_folder="results/ec2", gamma_factors=[None], gini_factors=[1])
+
+                    # test1.run(debug=True, iteration=it, pruning=True)
+                    # test2.run(debug=True, iteration=it, pruning=True)
+                    # test3.run(debug=False, iteration=it, pruning=True)
+                    # test4.run(debug=False, iteration=it, pruning=True)
+                    test5.run(debug=False, iteration=it, pruning=True)
 
     datasets_by_name = {
         ds[0]: {
@@ -318,17 +324,16 @@ if __name__ == "__main__":
         }
         for ds in datasets}
 
-    # save_pruned_trees("results/cart/pickle", "results/cart/pickle_pruned")
-    # save_pruned_trees("results/algo_gini/pickle", "results/algo_gini/pickle_pruned")
-
-    generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
-                              load_from="json")
-    generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
-                              load_from="json")
+    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
+    #                           load_from="json")
+    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+    #                           load_from="json")
     # generate_consolidates_csv("results/consolidated/algo_info_gain_experiments.csv", "results/algo_info_gain/json",
     #                           load_from="json")
     # generate_consolidates_csv("results/consolidated/c45_experiments.csv", "results/c45/json",
     #                           load_from="json")
+    generate_consolidates_csv("results/consolidated/ec2_experiments.csv", "results/ec2/json",
+                              load_from="json")
 
     # Pickle
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",

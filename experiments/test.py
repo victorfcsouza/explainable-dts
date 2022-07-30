@@ -260,7 +260,7 @@ class Test:
         data[self.col_class_name] = data[self.col_class_name].rank(method='dense', ascending=False).astype(int)
 
         X = data.drop(labels=self.col_class_name, axis=1).to_numpy()
-        y = data[self.col_class_name].astype('int').to_numpy() - 1
+        y = data[self.col_class_name].astype('int64').to_numpy() - 1
 
         return X, y
 
