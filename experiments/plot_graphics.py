@@ -77,11 +77,11 @@ def plot_trees(results_dir, pickle_filename=None, pickle_dir=None, pruned=False)
         pickle_files = sorted(pickle_files)
     for pickle_file in pickle_files:
         print(f"### Generate image for tree {pickle_file}")
-        test, iteration = Test.load_test_from_pickle(pickle_file, results_folder=results_dir)
+        test = Test.load_test_from_pickle(pickle_file, results_folder=results_dir)
         sub_folder = "img" if not pruned else "img_pruned"
         tree_img_file = test._get_filename(extension="png", gini_factor=test.gini_factors[0],
                                            gamma_factor=test.gamma_factors[0], sub_folder=sub_folder,
-                                           iteration=iteration)
+                                           iteration=test.iteration)
         test.clf_obj.tree_.debug_pydot(tree_img_file)
         print("---------")
 
