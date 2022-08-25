@@ -15,7 +15,7 @@ class DefaultClassifier:
         self.n_samples = None
         self.n_features_ = None
         self.tree_: tree = None
-        self.score = None  # For post-pruning
+        self.score_post_pruning = None  # For post-pruning
 
     def fit(self, X, y, modified_factor=1, gamma_factor=None, pruning=True, post_pruning=False, X_val=None, y_val=None):
         """Build decision tree classifier."""
@@ -79,7 +79,11 @@ class DefaultClassifier:
         """
         Get score without fitting
         """
-        return round(self.score(X_train, y_train), 3), round(self.score(X_test, y_test), 3)
+        if X_train is not None and y_train is not None:
+            return round(self.score(X_train, y_train), 3), \
+                   round(self.score(X_test, y_test), 3)
+        else:
+            return None, round(self.score(X_test, y_test), 3)
 
     def get_explainability_metrics(self):
         """
@@ -106,7 +110,7 @@ class DefaultClassifier:
             Returns post pruned tree
         """
 
-        self.score = self.get_score_without_fit([], [], X_val, y_val)
+        _, self.score_post_pruning = self.get_score_without_fit(None, None, X_val, y_val)
 
         def get_node_pruned(node):
             """
@@ -130,21 +134,21 @@ class DefaultClassifier:
                 node_right = copy.deepcopy(node.right)
                 node.left = None
                 node.right = None
-                new_score = self.get_score_without_fit([], [], X_val, y_val)
-                if new_score >= self.score:
+                _, new_score = self.get_score_without_fit(None, None, X_val, y_val)
+                if new_score >= self.score_post_pruning:
                     node.post_pruning = True
-                    self.score = new_score
+                    self.score_post_pruning = new_score
                 else:
                     # Revert Changes
                     node.left = node_left
                     node.right = node_right
+                    node.post_pruning = False
             else:
                 node.post_pruning = False
             return node.post_pruning
 
         # Get pruned class info
-        new_tree = copy.deepcopy(self.tree_)
-        get_node_pruned(new_tree)
+        get_node_pruned(self.tree_)
 
         # Prune nodes
         def prune_node(node):
@@ -156,5 +160,5 @@ class DefaultClassifier:
             if node.right:
                 prune_node(node.right)
 
-        prune_node(new_tree)
-        return new_tree
+        prune_node(self.tree_)
+        return self.tree_

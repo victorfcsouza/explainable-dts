@@ -152,8 +152,8 @@ class Test:
         """
         folder = f"{self.results_folder}/{sub_folder}" if sub_folder else f"{self.results_folder}"
         filename = f"{folder}/{self.dataset_name}_{self.classifier.__name__}_depth_{self.max_depth_stop}" \
-                   f"_samples_{self.min_samples_stop}_samples-frac_{self.min_samples_frac}_pruning_{self.pruning}" \
-                   f"post-pruning_{self.post_pruning}"
+                   f"_samples_{self.min_samples_stop}_samples-frac_{self.min_samples_frac}_" \
+                   f"pruning_{self.pruning}_post-pruning_{self.post_pruning}"
         if gini_factor:
             filename += f"_gini-factor_{gini_factor}"
         if gamma_factor:
@@ -217,7 +217,7 @@ class Test:
             Create train and test sets
         """
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state, train_size=train_size)
-        X_test, X_val, y_test, y_val = train_test_split(X, y, random_state=random_state, train_size=0.5)
+        X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, random_state=random_state, train_size=0.5)
         return X_train, X_val, X_test, y_train, y_val, y_test
 
     def run(self, store_results=True, debug=False):
@@ -289,7 +289,7 @@ class Test:
 
     @staticmethod
     def load_test_from_pickle(pickle_filepath, csv_file=None, col_class_name=None, cols_to_delete=None,
-                              results_folder="results"):
+                              results_folder="results", pruning=True, post_pruning=False):
         """
             Load test from pickle file
         """
@@ -299,23 +299,18 @@ class Test:
         dataset = pickle_info[0]
         algorithm = pickle_info[1]
         depth_index = pickle_info.index("depth")
-        max_depth_stop = int(pickle_info[depth_index + 1])
+        try:
+            max_depth_stop = int(pickle_info[depth_index + 1])
+        except ValueError:
+            # In case of math.inf
+            max_depth_stop = float(pickle_info[depth_index + 1])
+
         min_samples_stop_index = int(pickle_info.index("samples"))
         min_samples_stop = pickle_info[min_samples_stop_index + 1]
         gini_factor_index = pickle_info.index("gini-factor")
         gini_factor = float(pickle_info[gini_factor_index + 1])
         iteration_index = pickle_info.index("iteration")
         iteration = int(pickle_info[iteration_index + 1])
-        try:
-            pruning_index = pickle_info.index("pruning")
-            pruning = pickle_info[pruning_index + 1] == "True"
-        except ValueError:
-            pruning = True
-        try:
-            post_pruning_index = pickle_info.index("post-pruning")
-            post_pruning = pickle_info[post_pruning_index + 1] == "True"
-        except ValueError:
-            post_pruning = False
         try:
             gamma_factor_index = pickle_info.index("gamma")
             gamma = float(pickle_info[gamma_factor_index + 1])
