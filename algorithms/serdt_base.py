@@ -8,7 +8,7 @@ from algorithms.default_algorithm import DefaultClassifier
 from tree import tree
 
 
-class Algo(DefaultClassifier):
+class SERDTBase(DefaultClassifier):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
@@ -79,7 +79,7 @@ class Algo(DefaultClassifier):
                 pairs_left += (i - j) * (nodes_left - i)
                 pairs_left_right += (i - j) * nodes_right
             else:
-                pairs_right += (i - j) *  (n - i)
+                pairs_right += (i - j) * (n - i)
 
             j = i
             i += 1
@@ -87,7 +87,7 @@ class Algo(DefaultClassifier):
 
     def _get_best_threshold_old(self, X, y, a):
         """
-        Get threshold that minimizes _cost for attribute a. Also, returns that cost and all thresholds
+        Get threshold that minimizes _cost for attribute :param a. Also, returns that cost and all thresholds
         """
         a_values = sorted(list(set(X[:, a])))
         thresholds = [(a_values[i] + a_values[i - 1]) / 2 for i in range(1, len(a_values))]
@@ -107,11 +107,11 @@ class Algo(DefaultClassifier):
 
     def _get_attr_cost(self, thresholds, classes_thr):
         """
-            Get cost of relative to a attribute.
+            Get cost of relative to an attribute.
 
             Thresholds are the possible values that the attribute can hold. Classes_thr are the classes related do each
             threshold.
-            Each value in threshold corresponds to a example.
+            Each value in threshold corresponds to an example.
             Assume that thresholds are sorted in increasing order
         """
         max_cost = 0
@@ -174,7 +174,7 @@ class Algo(DefaultClassifier):
 
     def _cost(self, X, y, a, t):
         """
-        Calculate the cost of a binary split for attribute a at threshold t.
+        Calculate the cost of a binary split for attribute 'a' at threshold t.
         Formula:
         cost = max{P (S(a, <= t)) · |S(a, <= t)|, P (S(a, > t)) · |S(a, > t)|}.
 
@@ -330,7 +330,7 @@ class Algo(DefaultClassifier):
                                                  father_feature=node.feature_index)
         return node
 
-    def fit(self, X, y, modified_factor=1, gamma_factor=2 / 3, pruning=False):
+    def fit(self, X, y, modified_factor=1, gamma_factor=None, pruning=True, post_pruning=False, X_val=None, y_val=None):
         """
             Build decision tree classifier.
         """
@@ -343,3 +343,6 @@ class Algo(DefaultClassifier):
                                      calculate_gini=False)
         if pruning:
             self.tree_ = tree.Node.get_pruned_tree(self.tree_)
+        if post_pruning:
+            if post_pruning:
+                self.tree_ = self.get_post_pruned_tree(X_val, y_val)

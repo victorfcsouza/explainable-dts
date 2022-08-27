@@ -4,10 +4,10 @@
 import math
 import numpy as np
 
-from algorithms.algo import Algo
+from algorithms.serdt_base import SERDTBase
 
 
-class AlgoWithGini(Algo):
+class SERDT(SERDTBase):
     def __init__(self, max_depth=None, min_samples_stop=0):
         super().__init__(max_depth, min_samples_stop)
 
