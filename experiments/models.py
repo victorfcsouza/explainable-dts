@@ -46,13 +46,18 @@ class Result:
         return [param for param in ParameterType]
 
     @staticmethod
-    def get_metric_list():
-        return [metric for metric in MetricType]
+    def get_metric_list(get_execution_time=True):
+        metrics = [metric for metric in MetricType]
+        if not get_execution_time:
+            metrics.remove(MetricType.execution_time)
+        return metrics
 
-    def get_json(self):
+    def get_json(self, get_execution_time=True):
+        metrics = self.get_metric_list(get_execution_time=get_execution_time).copy()
+
         # Put params and metrics in order
         param_dict = {param: self.parameters[param] for param in self.get_param_list()}
-        metric_dict = {metric: self.metrics[metric] for metric in self.get_metric_list()}
+        metric_dict = {metric: self.metrics[metric] for metric in metrics}
         return {**param_dict, **metric_dict}
 
 

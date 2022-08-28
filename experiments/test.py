@@ -184,18 +184,18 @@ class Test:
         dataset = pickle_info[dataset_index + 1]
         algorithm_index = pickle_info.index(ParameterType.algorithm.value)
         algorithm = pickle_info[algorithm_index + 1]
-        depth_index = pickle_info.index("depth")
+        depth_index = pickle_info.index("max-depth")
         try:
             max_depth_stop = int(pickle_info[depth_index + 1])
         except ValueError:
             # In case of math.inf
             max_depth_stop = float(pickle_info[depth_index + 1])
 
-        min_samples_stop_index = int(pickle_info.index("samples"))
-        min_samples_stop = pickle_info[min_samples_stop_index + 1]
+        min_samples_stop_index = int(pickle_info.index("min-samples"))
+        min_samples_stop = int(pickle_info[min_samples_stop_index + 1])
         try:
-            min_samples_frac_index = int(pickle_info.index("samples-frac"))
-            min_samples_frac = pickle_info[min_samples_frac_index + 1]
+            min_samples_frac_index = int(pickle_info.index("min-samples-frac"))
+            min_samples_frac = float(pickle_info[min_samples_frac_index + 1])
         except ValueError:
             min_samples_frac = None
         gini_factor_index = pickle_info.index("gini-factor")
@@ -214,7 +214,7 @@ class Test:
         # Get Train and test accuracy
         if algorithm == "SERDT":
             clf = SERDT
-        elif algorithm == "Cart":
+        elif algorithm == "CART":
             clf = CART
         else:
             raise ValueError("Classifier not found!")

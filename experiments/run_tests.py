@@ -1,7 +1,6 @@
 """
     Main file to run tests
 """
-import copy
 import csv
 import json
 import numpy as np
@@ -16,7 +15,6 @@ from experiments.test import Test, Result, MetricType
 from algorithms.cart import CART
 from algorithms.ser_dt import SERDT
 from experiments.models import Dataset
-from tree.tree import Node
 from utils.file_utils import create_dir
 
 # Folder to save results
@@ -65,7 +63,7 @@ def create_bins(csv_file, bins=10, cols_to_remove=None):
     data.to_csv(outfile, encoding='utf-8', index=None)
 
 
-def save_pruned_trees(pickle_dir, ds_by_name, pruned_dir, pickle_file=None, pruning=True, post_pruning=False):
+def save_pruned_trees(pickle_dir, ds_by_name, pruned_dir, pickle_file=None):
     """
         Save pruned trees
     """
@@ -79,15 +77,12 @@ def save_pruned_trees(pickle_dir, ds_by_name, pruned_dir, pickle_file=None, prun
         print(f"### Punning tree {pickle_filename}")
         test = Test.load_test_from_pickle(f"{pickle_dir}/{pickle_filename}", datasets_by_name=ds_by_name)
         clf_obj = test.clf_obj
-        tree_obj: Node = clf_obj.tree_
-        pruned_tree = copy.deepcopy(tree_obj)
-        if pruning:
-            pruned_tree = tree_obj.get_pruned_tree()
-        if post_pruning:
-            X, y = test.parse_dataset()
-            X_train, X_val, X_test, y_train, y_val, y_test = test.split_train_test(X, y, random_state=test.iteration)
-            pruned_tree = clf_obj.get_post_pruned_tree(X_val, y_val)
-        pruned_filepath = f"{pruned_dir}/{pickle_filename}"
+        test.post_pruning = True
+        X, y = test.parse_dataset()
+        X_train, X_val, X_test, y_train, y_val, y_test = test.split_train_test(X, y, random_state=test.iteration)
+        pruned_tree = clf_obj.get_post_pruned_tree(X_val, y_val)
+        test.results_folder = pruned_dir
+        pruned_filepath = test._get_filename("pickle")
         create_dir(pruned_filepath)
         with open(pruned_filepath, 'wb') as handle:
             pickle.dump(pruned_tree, handle)
@@ -103,8 +98,9 @@ def generate_consolidates_csv(csv_file, result_dir, filename=None, load_from="js
     else:
         files = [filename]
     test_info_header = Result.get_param_list()
-    metrics_header = Result.get_metric_list()
+    metrics_header = Result.get_metric_list(get_execution_time=False)
     header = test_info_header + metrics_header
+    header = [hd.value for hd in header]
 
     if load_from == "json":
         json_files = [f for f in files if 'json' in f]
@@ -140,7 +136,7 @@ def generate_consolidates_csv(csv_file, result_dir, filename=None, load_from="js
             explainability_metrics = tree_obj.get_explainability_metrics(num_features)
             metrics = {MetricType.train_accuracy: score_train, MetricType.test_accuracy: score_test}
             metrics = {**metrics, **explainability_metrics}
-            result = Result(test.get_parameters(), metrics).get_json()
+            result = Result(test.get_parameters(), metrics).get_json(get_execution_time=False)
             row = [value for key, value in result.items()]
             rows.append(row)
             print("\nResults:")
@@ -253,7 +249,7 @@ if __name__ == "__main__":
     depths = [6]
     min_samples_list = [0]
     min_samples_frac_list = [None]
-    iterations = range(1, 2)
+    iterations = range(2, 11)
 
     # Run tests
     for it in iterations:
@@ -269,19 +265,24 @@ if __name__ == "__main__":
                                      min_samples_stop=min_samples_stop,
                                      min_samples_frac=min_samples_frac, gini_factor=0.97, gamma_factor=0.5,
                                      results_folder="results/ser_dt", iteration=it, post_pruning=False)
-                        test1.run()
-                        test2.run()
+                        # test1.run()
+                        # test2.run()
     datasets_info_dict = {ds.name: ds for ds in dataset_objs}
 
+    # Generate consolidated results
     # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/json",
     #                           load_from="json")
-    # generate_consolidates_csv("results/consolidated/algo_gini_experiments.csv", "results/algo_gini/json",
+    # generate_consolidates_csv("results/consolidated/ser_dt_experiments.csv", "results/ser_dt/json",
     #                           load_from="json")
 
     # Pickle
-    # generate_consolidates_csv("results/consolidated/cart_experiments.csv", "results/cart/pickle",
-    #                           load_from="pickle", ds_by_name=datasets_by_name)
+    generate_consolidates_csv("results/consolidated/cart_experiments_post_pruning.csv",
+                              "results/cart/pickle_post_pruned",
+                              load_from="pickle", ds_by_name=datasets_info_dict)
+    generate_consolidates_csv("results/consolidated/ser_dt_experiments_post_pruning.csv",
+                              "results/ser_dt/pickle_post_pruned",
+                              load_from="pickle", ds_by_name=datasets_info_dict)
 
     # Save pickles
-    # save_pruned_trees("results/algo_gini/pickle", datasets_by_name, "results/algo_gini/pickle_post_pruned",
-    #                   post_pruning=True)
+    # save_pruned_trees("results/ser_dt/pickle", datasets_info_dict, "results/ser_dt/pickle_post_pruned")
+    # save_pruned_trees("results/cart/pickle", datasets_info_dict, "results/cart/pickle_post_pruned")
